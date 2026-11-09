@@ -8,7 +8,8 @@ be reverted with one click. No paywall, no telemetry, no accounts.
 
 **🔥 I made VoidTweaks with the intention of making use of various functions from 
 your usual Windows Tweaks app, and make it ALL FREE AND OPEN-SOURCE.
-This is because I hate (and I'm sure you do too) paying for stuff**
+This is because I hate (and I'm sure you do too) wasting money on things
+we will use once or twice every month!! 🫡**
 
 > ⚠️ **Use at your own risk.** These are real system changes. Keep "Restore point
 > first" ticked (on by default) and only apply what you understand. The authors
