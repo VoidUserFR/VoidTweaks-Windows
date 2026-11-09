@@ -71,8 +71,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     public MainWindow()
     {
         InitializeComponent();
+        Loc.Init();
         _cat = Engine.Load();
         if (!IsAdmin()) AdminBar.Visibility = Visibility.Visible;
+        LocalizeChrome();
         BuildNav();
         UpdateStatic();
         UpdateLive();
@@ -130,13 +132,37 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     private void AddGroup(string text) =>
-        NavPanel.Children.Add(new TextBlock { Text = text, FontSize = 10, FontWeight = FontWeights.Bold, Opacity = 0.4, Margin = new Thickness(8, 12, 0, 3) });
+        NavPanel.Children.Add(new TextBlock { Text = Loc.T("grp." + text, text), FontSize = 10, FontWeight = FontWeights.Bold, Opacity = 0.4, Margin = new Thickness(8, 12, 0, 3) });
+
+    private void LocalizeChrome()
+    {
+        try
+        {
+            BoostBtn.Content = "⚡ " + Loc.T("btn.boost", "Boost now");
+            ScanBtn.Content = Loc.T("btn.scan", "Scan");
+            ApplyAllBtn.Content = Loc.T("btn.applyAll", "Apply all");
+            RevertAllBtn.Content = Loc.T("btn.revertAll", "Revert all");
+            UndoBtn.Content = Loc.T("btn.undo", "Undo last");
+            RestoreCheck.Content = Loc.T("chk.restore", "Restore point first");
+            DryCheck.Content = Loc.T("chk.dry", "Dry run");
+            SearchBox.PlaceholderText = Loc.T("ui.search", "Search tweaks…");
+        }
+        catch { }
+    }
+    private void SetLanguage(string code)
+    {
+        var cur = _sel;
+        Loc.Lang = code;
+        LocalizeChrome();
+        BuildNav();
+        if (!string.IsNullOrEmpty(cur)) Select(cur);
+    }
 
     private void AddItem(string name)
     {
         var sp = new StackPanel { Orientation = Orientation.Horizontal };
         sp.Children.Add(NavIcon(name));
-        var label = new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, FontSize = 13.5 };
+        var label = new TextBlock { Text = Loc.T("nav." + name, name), VerticalAlignment = VerticalAlignment.Center, FontSize = 13.5 };
         sp.Children.Add(label);
         var box = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(11, 9, 11, 9), Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent, Child = sp, Cursor = System.Windows.Input.Cursors.Hand };
         box.MouseLeftButtonUp += (_, _) => Select(name);
@@ -691,6 +717,18 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         HeaderTitle.Text = "Settings";
         HeaderSub.Text = "Appearance — make it yours";
         TweakList.Items.Clear();
+
+        var lang = Section(Loc.T("set.language", "Language"), Loc.T("set.languageDesc", "Choose the app language."));
+        var lrow = new WrapPanel();
+        foreach (var code in Loc.Available)
+        {
+            bool on = Loc.Lang == code;
+            var lb = new Wpf.Ui.Controls.Button { Content = Loc.Names[code], Appearance = on ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 8) };
+            var c = code; lb.Click += (_, _) => SetLanguage(c);
+            lrow.Children.Add(lb);
+        }
+        lang.Children.Add(lrow);
+        TweakList.Items.Add(Card(lang));
 
         var t = Section("Theme", "Dark or light base.");
         var trow = new StackPanel { Orientation = Orientation.Horizontal };

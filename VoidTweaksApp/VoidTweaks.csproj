@@ -22,6 +22,9 @@
     <None Include="..\OpenTweaks.Actions.ps1" Link="OpenTweaks.Actions.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\i18n.json" Link="i18n.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Resource Include="..\VoidTweaks.ico" Link="VoidTweaks.ico" />
   </ItemGroup>
 </Project>

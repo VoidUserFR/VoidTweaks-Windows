@@ -1,0 +1,56 @@
+{
+  "en": {
+    "nav.Home": "Home", "nav.Networking": "Networking", "nav.Health": "Health", "nav.All": "All", "nav.Needs attention": "Needs attention", "nav.Cleanup": "Cleanup", "nav.Security": "Security", "nav.Presets": "Presets", "nav.Startup": "Startup", "nav.Processes": "Processes", "nav.Apps": "Apps", "nav.Game profiles": "Game profiles", "nav.Overclock": "Overclock", "nav.Settings": "Settings",
+    "nav.Performance": "Performance", "nav.Gaming": "Gaming", "nav.Privacy": "Privacy", "nav.Network": "Network", "nav.Visual": "Visual", "nav.Explorer": "Explorer", "nav.Advanced": "Advanced", "nav.Services": "Services", "nav.AI & Bloat": "AI & Bloat", "nav.Debloat": "Debloat", "nav.Fixes": "Fixes", "nav.Updates": "Updates", "nav.Maintenance": "Maintenance",
+    "grp.OVERVIEW": "OVERVIEW", "grp.MENU": "MENU", "grp.INSTALL & TUNE": "INSTALL & TUNE", "grp.TWEAKS": "TWEAKS", "grp.APP": "APP",
+    "btn.boost": "Boost now", "btn.scan": "Scan", "btn.applyAll": "Apply all", "btn.revertAll": "Revert all", "btn.undo": "Undo last", "chk.restore": "Restore point first", "chk.dry": "Dry run", "ui.search": "Search tweaks…", "set.language": "Language", "set.languageDesc": "Choose the app language."
+  },
+  "pt": {
+    "nav.Home": "Início", "nav.Networking": "Rede", "nav.Health": "Saúde", "nav.All": "Tudo", "nav.Needs attention": "Precisa de atenção", "nav.Cleanup": "Limpeza", "nav.Security": "Segurança", "nav.Presets": "Predefinições", "nav.Startup": "Arranque", "nav.Processes": "Processos", "nav.Apps": "Aplicações", "nav.Game profiles": "Perfis de jogo", "nav.Overclock": "Overclock", "nav.Settings": "Definições",
+    "nav.Performance": "Desempenho", "nav.Gaming": "Jogos", "nav.Privacy": "Privacidade", "nav.Network": "Rede", "nav.Visual": "Visual", "nav.Explorer": "Explorador", "nav.Advanced": "Avançado", "nav.Services": "Serviços", "nav.AI & Bloat": "IA e Bloat", "nav.Debloat": "Debloat", "nav.Fixes": "Correções", "nav.Updates": "Atualizações", "nav.Maintenance": "Manutenção",
+    "grp.OVERVIEW": "VISÃO GERAL", "grp.MENU": "MENU", "grp.INSTALL & TUNE": "INSTALAR E AFINAR", "grp.TWEAKS": "AJUSTES", "grp.APP": "APP",
+    "btn.boost": "Acelerar agora", "btn.scan": "Analisar", "btn.applyAll": "Aplicar tudo", "btn.revertAll": "Reverter tudo", "btn.undo": "Desfazer último", "chk.restore": "Ponto de restauro primeiro", "chk.dry": "Simulação", "ui.search": "Procurar ajustes…", "set.language": "Idioma", "set.languageDesc": "Escolha o idioma da aplicação."
+  },
+  "ru": {
+    "nav.Home": "Главная", "nav.Networking": "Сеть", "nav.Health": "Состояние", "nav.All": "Все", "nav.Needs attention": "Требует внимания", "nav.Cleanup": "Очистка", "nav.Security": "Безопасность", "nav.Presets": "Пресеты", "nav.Startup": "Автозапуск", "nav.Processes": "Процессы", "nav.Apps": "Приложения", "nav.Game profiles": "Профили игр", "nav.Overclock": "Разгон", "nav.Settings": "Настройки",
+    "nav.Performance": "Производительность", "nav.Gaming": "Игры", "nav.Privacy": "Конфиденциальность", "nav.Network": "Сеть", "nav.Visual": "Визуал", "nav.Explorer": "Проводник", "nav.Advanced": "Дополнительно", "nav.Services": "Службы", "nav.AI & Bloat": "ИИ и мусор", "nav.Debloat": "Деблоат", "nav.Fixes": "Исправления", "nav.Updates": "Обновления", "nav.Maintenance": "Обслуживание",
+    "grp.OVERVIEW": "ОБЗОР", "grp.MENU": "МЕНЮ", "grp.INSTALL & TUNE": "УСТАНОВКА И НАСТРОЙКА", "grp.TWEAKS": "ТВИКИ", "grp.APP": "ПРИЛОЖЕНИЕ",
+    "btn.boost": "Ускорить", "btn.scan": "Сканировать", "btn.applyAll": "Применить всё", "btn.revertAll": "Откатить всё", "btn.undo": "Отменить", "chk.restore": "Сначала точка восстановления", "chk.dry": "Пробный запуск", "ui.search": "Поиск твиков…", "set.language": "Язык", "set.languageDesc": "Выберите язык приложения."
+  },
+  "fr": {
+    "nav.Home": "Accueil", "nav.Networking": "Réseau", "nav.Health": "Santé", "nav.All": "Tout", "nav.Needs attention": "À vérifier", "nav.Cleanup": "Nettoyage", "nav.Security": "Sécurité", "nav.Presets": "Préréglages", "nav.Startup": "Démarrage", "nav.Processes": "Processus", "nav.Apps": "Applications", "nav.Game profiles": "Profils de jeu", "nav.Overclock": "Overclock", "nav.Settings": "Paramètres",
+    "nav.Performance": "Performances", "nav.Gaming": "Jeux", "nav.Privacy": "Confidentialité", "nav.Network": "Réseau", "nav.Visual": "Visuel", "nav.Explorer": "Explorateur", "nav.Advanced": "Avancé", "nav.Services": "Services", "nav.AI & Bloat": "IA & superflu", "nav.Debloat": "Débloat", "nav.Fixes": "Réparations", "nav.Updates": "Mises à jour", "nav.Maintenance": "Maintenance",
+    "grp.OVERVIEW": "APERÇU", "grp.MENU": "MENU", "grp.INSTALL & TUNE": "INSTALLER & RÉGLER", "grp.TWEAKS": "RÉGLAGES", "grp.APP": "APPLI",
+    "btn.boost": "Booster", "btn.scan": "Analyser", "btn.applyAll": "Tout appliquer", "btn.revertAll": "Tout annuler", "btn.undo": "Annuler", "chk.restore": "Point de restauration d'abord", "chk.dry": "Simulation", "ui.search": "Rechercher…", "set.language": "Langue", "set.languageDesc": "Choisissez la langue de l'application."
+  },
+  "de": {
+    "nav.Home": "Start", "nav.Networking": "Netzwerk", "nav.Health": "Zustand", "nav.All": "Alle", "nav.Needs attention": "Beachten", "nav.Cleanup": "Bereinigung", "nav.Security": "Sicherheit", "nav.Presets": "Vorlagen", "nav.Startup": "Autostart", "nav.Processes": "Prozesse", "nav.Apps": "Apps", "nav.Game profiles": "Spielprofile", "nav.Overclock": "Übertakten", "nav.Settings": "Einstellungen",
+    "nav.Performance": "Leistung", "nav.Gaming": "Gaming", "nav.Privacy": "Datenschutz", "nav.Network": "Netzwerk", "nav.Visual": "Visuell", "nav.Explorer": "Explorer", "nav.Advanced": "Erweitert", "nav.Services": "Dienste", "nav.AI & Bloat": "KI & Ballast", "nav.Debloat": "Entschlacken", "nav.Fixes": "Reparaturen", "nav.Updates": "Updates", "nav.Maintenance": "Wartung",
+    "grp.OVERVIEW": "ÜBERSICHT", "grp.MENU": "MENÜ", "grp.INSTALL & TUNE": "INSTALLIEREN & TUNEN", "grp.TWEAKS": "TWEAKS", "grp.APP": "APP",
+    "btn.boost": "Boosten", "btn.scan": "Scannen", "btn.applyAll": "Alle anwenden", "btn.revertAll": "Alle zurücksetzen", "btn.undo": "Rückgängig", "chk.restore": "Zuerst Wiederherstellungspunkt", "chk.dry": "Testlauf", "ui.search": "Tweaks suchen…", "set.language": "Sprache", "set.languageDesc": "App-Sprache wählen."
+  },
+  "es": {
+    "nav.Home": "Inicio", "nav.Networking": "Red", "nav.Health": "Estado", "nav.All": "Todo", "nav.Needs attention": "Requiere atención", "nav.Cleanup": "Limpieza", "nav.Security": "Seguridad", "nav.Presets": "Ajustes", "nav.Startup": "Inicio auto.", "nav.Processes": "Procesos", "nav.Apps": "Aplicaciones", "nav.Game profiles": "Perfiles de juego", "nav.Overclock": "Overclock", "nav.Settings": "Ajustes",
+    "nav.Performance": "Rendimiento", "nav.Gaming": "Juegos", "nav.Privacy": "Privacidad", "nav.Network": "Red", "nav.Visual": "Visual", "nav.Explorer": "Explorador", "nav.Advanced": "Avanzado", "nav.Services": "Servicios", "nav.AI & Bloat": "IA y Bloat", "nav.Debloat": "Debloat", "nav.Fixes": "Reparaciones", "nav.Updates": "Actualizaciones", "nav.Maintenance": "Mantenimiento",
+    "grp.OVERVIEW": "RESUMEN", "grp.MENU": "MENÚ", "grp.INSTALL & TUNE": "INSTALAR Y AJUSTAR", "grp.TWEAKS": "AJUSTES", "grp.APP": "APP",
+    "btn.boost": "Acelerar", "btn.scan": "Analizar", "btn.applyAll": "Aplicar todo", "btn.revertAll": "Revertir todo", "btn.undo": "Deshacer", "chk.restore": "Punto de restauración primero", "chk.dry": "Simulación", "ui.search": "Buscar ajustes…", "set.language": "Idioma", "set.languageDesc": "Elige el idioma de la app."
+  },
+  "zh": {
+    "nav.Home": "主页", "nav.Networking": "网络", "nav.Health": "健康", "nav.All": "全部", "nav.Needs attention": "需要注意", "nav.Cleanup": "清理", "nav.Security": "安全", "nav.Presets": "预设", "nav.Startup": "启动项", "nav.Processes": "进程", "nav.Apps": "应用", "nav.Game profiles": "游戏配置", "nav.Overclock": "超频", "nav.Settings": "设置",
+    "nav.Performance": "性能", "nav.Gaming": "游戏", "nav.Privacy": "隐私", "nav.Network": "网络", "nav.Visual": "视觉", "nav.Explorer": "资源管理器", "nav.Advanced": "高级", "nav.Services": "服务", "nav.AI & Bloat": "AI与臃肿", "nav.Debloat": "去臃肿", "nav.Fixes": "修复", "nav.Updates": "更新", "nav.Maintenance": "维护",
+    "grp.OVERVIEW": "概览", "grp.MENU": "菜单", "grp.INSTALL & TUNE": "安装与调优", "grp.TWEAKS": "优化项", "grp.APP": "应用",
+    "btn.boost": "立即加速", "btn.scan": "扫描", "btn.applyAll": "全部应用", "btn.revertAll": "全部还原", "btn.undo": "撤销上一步", "chk.restore": "先创建还原点", "chk.dry": "预演", "ui.search": "搜索优化项…", "set.language": "语言", "set.languageDesc": "选择应用语言。"
+  },
+  "it": {
+    "nav.Home": "Home", "nav.Networking": "Rete", "nav.Health": "Stato", "nav.All": "Tutti", "nav.Needs attention": "Da controllare", "nav.Cleanup": "Pulizia", "nav.Security": "Sicurezza", "nav.Presets": "Preset", "nav.Startup": "Avvio", "nav.Processes": "Processi", "nav.Apps": "App", "nav.Game profiles": "Profili di gioco", "nav.Overclock": "Overclock", "nav.Settings": "Impostazioni",
+    "nav.Performance": "Prestazioni", "nav.Gaming": "Gaming", "nav.Privacy": "Privacy", "nav.Network": "Rete", "nav.Visual": "Visivo", "nav.Explorer": "Esplora file", "nav.Advanced": "Avanzate", "nav.Services": "Servizi", "nav.AI & Bloat": "IA & Bloat", "nav.Debloat": "Debloat", "nav.Fixes": "Correzioni", "nav.Updates": "Aggiornamenti", "nav.Maintenance": "Manutenzione",
+    "grp.OVERVIEW": "PANORAMICA", "grp.MENU": "MENU", "grp.INSTALL & TUNE": "INSTALLA & OTTIMIZZA", "grp.TWEAKS": "MODIFICHE", "grp.APP": "APP",
+    "btn.boost": "Accelera", "btn.scan": "Scansiona", "btn.applyAll": "Applica tutto", "btn.revertAll": "Ripristina tutto", "btn.undo": "Annulla", "chk.restore": "Prima punto di ripristino", "chk.dry": "Prova", "ui.search": "Cerca…", "set.language": "Lingua", "set.languageDesc": "Scegli la lingua dell'app."
+  },
+  "ja": {
+    "nav.Home": "ホーム", "nav.Networking": "ネットワーク", "nav.Health": "状態", "nav.All": "すべて", "nav.Needs attention": "要確認", "nav.Cleanup": "クリーンアップ", "nav.Security": "セキュリティ", "nav.Presets": "プリセット", "nav.Startup": "スタートアップ", "nav.Processes": "プロセス", "nav.Apps": "アプリ", "nav.Game profiles": "ゲームプロファイル", "nav.Overclock": "オーバークロック", "nav.Settings": "設定",
+    "nav.Performance": "パフォーマンス", "nav.Gaming": "ゲーム", "nav.Privacy": "プライバシー", "nav.Network": "ネットワーク", "nav.Visual": "表示", "nav.Explorer": "エクスプローラー", "nav.Advanced": "詳細", "nav.Services": "サービス", "nav.AI & Bloat": "AIと不要物", "nav.Debloat": "デブロート", "nav.Fixes": "修復", "nav.Updates": "更新", "nav.Maintenance": "メンテナンス",
+    "grp.OVERVIEW": "概要", "grp.MENU": "メニュー", "grp.INSTALL & TUNE": "インストールと調整", "grp.TWEAKS": "調整", "grp.APP": "アプリ",
+    "btn.boost": "ブースト", "btn.scan": "スキャン", "btn.applyAll": "すべて適用", "btn.revertAll": "すべて元に戻す", "btn.undo": "元に戻す", "chk.restore": "先に復元ポイント", "chk.dry": "ドライラン", "ui.search": "検索…", "set.language": "言語", "set.languageDesc": "アプリの言語を選択。"
+  }
+}
