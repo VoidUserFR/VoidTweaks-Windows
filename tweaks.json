@@ -1,0 +1,953 @@
+{
+  "schemaVersion": 1,
+  "name": "OpenTweaks",
+  "description": "Transparent, reversible Windows tweaks. Every entry shows exactly what it runs and how to undo it. No telemetry, no network calls, no paywall.",
+  "categories": ["Performance", "Gaming", "Privacy", "Network", "Visual", "Explorer", "Advanced", "Services", "AI & Bloat", "Debloat", "Fixes", "Updates", "Maintenance"],
+  "tweaks": [
+    {
+      "id": "perf-startup-delay",
+      "name": "Remove startup app delay",
+      "category": "Performance",
+      "description": "Launch your startup apps right away instead of after Windows' ~10 second wait.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize\" /v StartupDelayInMSec /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize\" /v StartupDelayInMSec /f"]
+    },
+    {
+      "id": "perf-priority-separation",
+      "name": "Favor the app you're using",
+      "category": "Performance",
+      "description": "Give the window in front more CPU time so it feels more responsive.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 38 /f"],
+      "revert": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 2 /f"]
+    },
+    {
+      "id": "perf-hibernation-off",
+      "name": "Disable hibernation",
+      "category": "Performance",
+      "description": "Turn off hibernation and reclaim disk space equal to your RAM (also disables Fast Startup).",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["powercfg /hibernate off"],
+      "revert": ["powercfg /hibernate on"]
+    },
+    {
+      "id": "perf-high-power-plan",
+      "name": "High Performance power plan",
+      "category": "Performance",
+      "description": "Stop the CPU from down-clocking to save power. Revert goes back to Balanced.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"],
+      "revert": ["powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e"]
+    },
+    {
+      "id": "perf-ultimate-power",
+      "name": "Ultimate Performance power plan",
+      "category": "Performance",
+      "description": "Unlock and switch to the hidden Ultimate Performance plan (a notch above High Performance).",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61", "powercfg /setactive e9a42b02-d5df-448d-aa00-03f14749eb61"],
+      "revert": ["powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e"]
+    },
+    {
+      "id": "perf-power-throttling-off",
+      "name": "Disable power throttling",
+      "category": "Performance",
+      "description": "Stop Windows slowing down background apps to save battery. Best on a desktop.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling\" /v PowerThrottlingOff /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling\" /v PowerThrottlingOff /f"]
+    },
+    {
+      "id": "perf-sysmain",
+      "name": "Disable SysMain (Superfetch)",
+      "category": "Performance",
+      "description": "Stop the preloading service. Helps on SSDs and low-RAM PCs; leave on for old HDDs.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name SysMain -ErrorAction SilentlyContinue", "Set-Service -Name SysMain -StartupType Disabled"],
+      "revert": ["Set-Service -Name SysMain -StartupType Automatic", "Start-Service -Name SysMain -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "game-mode-on",
+      "name": "Enable Game Mode",
+      "category": "Gaming",
+      "description": "Let Windows hold back background work while you're playing a game.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AllowAutoGameMode /t REG_DWORD /d 1 /f", "reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AllowAutoGameMode /t REG_DWORD /d 0 /f"]
+    },
+    {
+      "id": "game-dvr-off",
+      "name": "Disable Game DVR recording",
+      "category": "Gaming",
+      "description": "Turn off the Game Bar background capture that quietly costs a few FPS.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 0 /f", "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\" /v AllowGameDVR /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 1 /f", "reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\" /v AllowGameDVR /f"]
+    },
+    {
+      "id": "game-gpu-scheduling",
+      "name": "Hardware-accelerated GPU scheduling",
+      "category": "Gaming",
+      "description": "Let the GPU manage its own memory (HAGS). Can cut latency on modern GPUs. Needs a restart.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 2 /f"],
+      "revert": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "game-mouse-accel-off",
+      "name": "Disable mouse acceleration",
+      "category": "Gaming",
+      "description": "Turn off 'enhance pointer precision' for a 1:1, predictable mouse feel.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 0 /f", "reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 0 /f", "reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 1 /f", "reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 6 /f", "reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 10 /f"]
+    },
+    {
+      "id": "game-system-responsiveness",
+      "name": "Prioritize games over background tasks",
+      "category": "Gaming",
+      "description": "Let games and multimedia use more CPU (SystemResponsiveness = 0). Revert restores the default.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v SystemResponsiveness /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v SystemResponsiveness /t REG_DWORD /d 20 /f"]
+    },
+    {
+      "id": "game-games-task",
+      "name": "Raise the games scheduling priority",
+      "category": "Gaming",
+      "description": "Bump the priority Windows gives games (MMCSS Games task). Helps some games, not all.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v Priority /t REG_DWORD /d 6 /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"Scheduling Category\" /t REG_SZ /d High /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"SFIO Priority\" /t REG_SZ /d High /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v Priority /t REG_DWORD /d 2 /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"Scheduling Category\" /t REG_SZ /d Medium /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games\" /v \"SFIO Priority\" /t REG_SZ /d Normal /f"]
+    },
+    {
+      "id": "priv-advertising-id",
+      "name": "Disable advertising ID",
+      "category": "Privacy",
+      "description": "Stop apps using your ad ID to track you across apps.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\" /v Enabled /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\" /v Enabled /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "priv-telemetry-min",
+      "name": "Minimize telemetry",
+      "category": "Privacy",
+      "description": "Send Microsoft the least diagnostic data your edition allows.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\" /v AllowTelemetry /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\" /v AllowTelemetry /t REG_DWORD /d 3 /f"]
+    },
+    {
+      "id": "priv-tailored",
+      "name": "Disable tailored experiences",
+      "category": "Privacy",
+      "description": "Stop Windows using your data to personalize tips and ads.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy\" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy\" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "priv-activity-history",
+      "name": "Disable activity history",
+      "category": "Privacy",
+      "description": "Stop Windows recording and uploading your activity timeline.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v EnableActivityFeed /t REG_DWORD /d 0 /f", "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v PublishUserActivities /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v EnableActivityFeed /f", "reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v PublishUserActivities /f"]
+    },
+    {
+      "id": "priv-suggested-content",
+      "name": "Disable suggestions & tips",
+      "category": "Privacy",
+      "description": "Turn off Start/Settings suggestions, tips and promoted 'recommended' content.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f", "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SystemPaneSuggestionsEnabled /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 1 /f", "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SystemPaneSuggestionsEnabled /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "priv-start-tracking",
+      "name": "Don't track most-used apps",
+      "category": "Privacy",
+      "description": "Stop Start listing your most-used and recently added apps.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Start_TrackProgs /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Start_TrackProgs /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "priv-diagtrack",
+      "name": "Stop the telemetry service",
+      "category": "Privacy",
+      "description": "Disable the Connected User Experiences/Telemetry service (DiagTrack).",
+      "impact": "low", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name DiagTrack -ErrorAction SilentlyContinue", "Set-Service -Name DiagTrack -StartupType Disabled"],
+      "revert": ["Set-Service -Name DiagTrack -StartupType Automatic", "Start-Service -Name DiagTrack -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "priv-cortana-off",
+      "name": "Disable Cortana",
+      "category": "Privacy",
+      "description": "Turn off the Cortana assistant by policy.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search\" /v AllowCortana /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search\" /v AllowCortana /f"]
+    },
+    {
+      "id": "priv-location-off",
+      "name": "Turn off location access",
+      "category": "Privacy",
+      "description": "Block apps and Windows from using your location.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location\" /v Value /t REG_SZ /d Deny /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location\" /v Value /t REG_SZ /d Allow /f"]
+    },
+    {
+      "id": "priv-feedback-off",
+      "name": "Stop feedback requests",
+      "category": "Privacy",
+      "description": "Stop Windows popping up asking for feedback.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Siuf\\Rules\" /v NumberOfSIUFInPeriod /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKCU\\Software\\Microsoft\\Siuf\\Rules\" /v NumberOfSIUFInPeriod /f"]
+    },
+    {
+      "id": "priv-consumer-features",
+      "name": "Stop auto-installed promoted apps",
+      "category": "Privacy",
+      "description": "Stop Windows silently installing promoted third-party apps.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent\" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent\" /v DisableWindowsConsumerFeatures /f"]
+    },
+    {
+      "id": "net-nagle-off",
+      "name": "Disable Nagle's algorithm",
+      "category": "Network",
+      "description": "Send small packets immediately for lower latency in twitchy games. Needs a restart.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces' | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name TcpAckFrequency -Value 1 -PropertyType DWord -Force | Out-Null; New-ItemProperty -Path $_.PSPath -Name TCPNoDelay -Value 1 -PropertyType DWord -Force | Out-Null }"],
+      "revert": ["Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces' | ForEach-Object { Remove-ItemProperty -Path $_.PSPath -Name TcpAckFrequency -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $_.PSPath -Name TCPNoDelay -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "net-throttling-off",
+      "name": "Disable network throttling",
+      "category": "Network",
+      "description": "Remove the multimedia network throttle. Helps on fast connections. Needs a restart.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 4294967295 /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f"]
+    },
+    {
+      "id": "net-autotuning-off",
+      "name": "Disable TCP auto-tuning",
+      "category": "Network",
+      "description": "Can steady your ping on unstable connections - but may slow large downloads. Test it.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["netsh int tcp set global autotuninglevel=disabled"],
+      "revert": ["netsh int tcp set global autotuninglevel=normal"]
+    },
+    {
+      "id": "net-rsc-off",
+      "name": "Disable RSC (receive coalescing)",
+      "category": "Network",
+      "description": "Deliver packets without bundling them, for slightly lower latency.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["netsh int tcp set global rsc=disabled"],
+      "revert": ["netsh int tcp set global rsc=enabled"]
+    },
+    {
+      "id": "net-ecn-off",
+      "name": "Disable ECN",
+      "category": "Network",
+      "description": "Turn off Explicit Congestion Notification for compatibility with some routers.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["netsh int tcp set global ecncapability=disabled"],
+      "revert": ["netsh int tcp set global ecncapability=enabled"]
+    },
+    {
+      "id": "net-timestamps-off",
+      "name": "Disable TCP timestamps",
+      "category": "Network",
+      "description": "Drop timestamp bytes from each packet for a touch less overhead.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["netsh int tcp set global timestamps=disabled"],
+      "revert": ["netsh int tcp set global timestamps=enabled"]
+    },
+    {
+      "id": "net-heuristics-off",
+      "name": "Stop auto-tuning overrides",
+      "category": "Network",
+      "description": "Stop Windows quietly overriding your auto-tuning choice on its own.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["netsh int tcp set heuristics disabled"],
+      "revert": ["netsh int tcp set heuristics default"]
+    },
+    {
+      "id": "net-qos-bandwidth",
+      "name": "Free the reserved 20% bandwidth",
+      "category": "Network",
+      "description": "Let apps use the 20% of bandwidth Windows reserves for QoS.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Psched\" /v NonBestEffortLimit /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Psched\" /v NonBestEffortLimit /f"]
+    },
+    {
+      "id": "net-do-p2p-off",
+      "name": "Disable update P2P sharing",
+      "category": "Network",
+      "description": "Stop Windows uploading updates to other PCs over your connection.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization\\Config\" /v DODownloadMode /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization\\Config\" /v DODownloadMode /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "net-dns-cloudflare",
+      "name": "Use Cloudflare DNS (1.1.1.1)",
+      "category": "Network",
+      "description": "Point your network adapters at fast, private Cloudflare DNS. Revert returns to automatic (DHCP).",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Get-NetAdapter -Physical | Where-Object { $_.Status -eq 'Up' } | Set-DnsClientServerAddress -ServerAddresses ('1.1.1.1','1.0.0.1') -ErrorAction SilentlyContinue"],
+      "revert": ["Get-NetAdapter -Physical | Where-Object { $_.Status -eq 'Up' } | Set-DnsClientServerAddress -ResetServerAddresses -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "net-flush-dns",
+      "name": "Flush DNS cache",
+      "category": "Network",
+      "description": "Clear cached lookups to fix sites that won't resolve. One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["ipconfig /flushdns"],
+      "revert": []
+    },
+    {
+      "id": "visual-best-performance",
+      "name": "Visual effects: best performance",
+      "category": "Visual",
+      "description": "Turn off animations and shadows so the desktop feels instant.",
+      "impact": "medium", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\" /v VisualFXSetting /t REG_DWORD /d 2 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\" /v VisualFXSetting /t REG_DWORD /d 0 /f"]
+    },
+    {
+      "id": "visual-transparency-off",
+      "name": "Disable transparency",
+      "category": "Visual",
+      "description": "Turn off taskbar/window transparency - a small GPU saving.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v EnableTransparency /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v EnableTransparency /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "visual-animations-off",
+      "name": "Disable window animations",
+      "category": "Visual",
+      "description": "Turn off the minimize/maximize animations for snappier windows.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Control Panel\\Desktop\\WindowMetrics\" /v MinAnimate /t REG_SZ /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Control Panel\\Desktop\\WindowMetrics\" /v MinAnimate /t REG_SZ /d 1 /f"]
+    },
+    {
+      "id": "visual-menu-delay",
+      "name": "Remove menu delay",
+      "category": "Visual",
+      "description": "Make menus open instantly instead of after ~400 ms.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 400 /f"]
+    },
+    {
+      "id": "visual-file-extensions",
+      "name": "Show file extensions",
+      "category": "Visual",
+      "description": "Always show file extensions in Explorer - handy and safer.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "adv-dynamic-tick-off",
+      "name": "Disable dynamic tick",
+      "category": "Advanced",
+      "description": "Keep the system timer steady for lower latency in games/audio. Needs a restart.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["bcdedit /set disabledynamictick yes"],
+      "revert": ["bcdedit /set disabledynamictick no"]
+    },
+    {
+      "id": "adv-platform-clock-off",
+      "name": "Don't force the HPET clock",
+      "category": "Advanced",
+      "description": "Let Windows pick the best timer instead of being forced onto HPET. Needs a restart.",
+      "impact": "low", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["bcdedit /deletevalue useplatformclock"],
+      "revert": ["bcdedit /set useplatformclock true"]
+    },
+    {
+      "id": "adv-gpu-msi-mode",
+      "name": "Enable MSI mode for GPU",
+      "category": "Advanced",
+      "description": "Switch the GPU to message-signaled interrupts - can reduce stutter. Needs a restart. Test stability.",
+      "impact": "medium", "risk": "high", "requiresAdmin": true, "needsRestart": true, "reversible": true,
+      "apply": ["Get-PnpDevice -Class Display -Status OK -ErrorAction SilentlyContinue | ForEach-Object { $p = \"HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\$($_.InstanceId)\\Device Parameters\\Interrupt Management\\MessageSignaledInterruptProperties\"; if (Test-Path $p) { New-ItemProperty -Path $p -Name MSISupported -Value 1 -PropertyType DWord -Force | Out-Null } }"],
+      "revert": ["Get-PnpDevice -Class Display -Status OK -ErrorAction SilentlyContinue | ForEach-Object { $p = \"HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\$($_.InstanceId)\\Device Parameters\\Interrupt Management\\MessageSignaledInterruptProperties\"; if (Test-Path $p) { New-ItemProperty -Path $p -Name MSISupported -Value 0 -PropertyType DWord -Force | Out-Null } }"]
+    },
+    {
+      "id": "adv-mem-compression-off",
+      "name": "Disable memory compression",
+      "category": "Advanced",
+      "description": "Stop Windows compressing RAM - frees CPU but uses more memory. Best with lots of RAM.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue"],
+      "revert": ["Enable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "ai-copilot-off",
+      "name": "Disable Windows Copilot",
+      "category": "AI & Bloat",
+      "description": "Turn off the Windows Copilot assistant by policy.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot\" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f", "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot\" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot\" /v TurnOffWindowsCopilot /f", "reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot\" /v TurnOffWindowsCopilot /f"]
+    },
+    {
+      "id": "ai-copilot-taskbar-off",
+      "name": "Hide Copilot taskbar button",
+      "category": "AI & Bloat",
+      "description": "Remove the Copilot icon from the taskbar.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowCopilotButton /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowCopilotButton /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "ai-recall-off",
+      "name": "Disable Windows Recall",
+      "category": "AI & Bloat",
+      "description": "Block Recall from taking AI snapshots of what you do.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI\" /v DisableAIDataAnalysis /t REG_DWORD /d 1 /f", "reg add \"HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsAI\" /v DisableAIDataAnalysis /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI\" /v DisableAIDataAnalysis /f", "reg delete \"HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsAI\" /v DisableAIDataAnalysis /f"]
+    },
+    {
+      "id": "ai-edge-copilot-off",
+      "name": "Disable Copilot in Edge",
+      "category": "AI & Bloat",
+      "description": "Turn off the Copilot/Discover sidebar button in Microsoft Edge.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v HubsSidebarEnabled /t REG_DWORD /d 0 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v HubsSidebarEnabled /f"]
+    },
+    {
+      "id": "ai-bing-search-off",
+      "name": "Disable Bing & Copilot in search",
+      "category": "AI & Bloat",
+      "description": "Keep Start search local and fast - no web/Bing/Copilot results.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v BingSearchEnabled /t REG_DWORD /d 0 /f", "reg add \"HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer\" /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v BingSearchEnabled /t REG_DWORD /d 1 /f", "reg delete \"HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer\" /v DisableSearchBoxSuggestions /f"]
+    },
+    {
+      "id": "bloat-teams-chat-off",
+      "name": "Remove Teams Chat icon",
+      "category": "AI & Bloat",
+      "description": "Hide the consumer Teams 'Chat' button from the taskbar.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Chat\" /v ChatIcon /t REG_DWORD /d 3 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Chat\" /v ChatIcon /f"]
+    },
+    {
+      "id": "debloat-xbox",
+      "name": "Remove Xbox apps",
+      "category": "Debloat",
+      "description": "Uninstall the Xbox app bundle (keeps Game Bar services). Revert reinstalls them.",
+      "impact": "low", "risk": "medium", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *Xbox* | Where-Object { $_.Name -notlike '*GameCallableUI*' } | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *Xbox* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-widgets",
+      "name": "Remove Widgets",
+      "category": "Debloat",
+      "description": "Remove the taskbar Widgets / Web Experience panel. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *WebExperience* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *WebExperience* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-bing-news-weather",
+      "name": "Remove Bing News & Weather",
+      "category": "Debloat",
+      "description": "Uninstall the Bing News and Weather apps. Revert reinstalls them.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *BingNews* | Remove-AppxPackage -ErrorAction SilentlyContinue", "Get-AppxPackage *BingWeather* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *BingNews* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }", "Get-AppxPackage -AllUsers *BingWeather* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-3dviewer-paint3d",
+      "name": "Remove 3D Viewer & Paint 3D",
+      "category": "Debloat",
+      "description": "Uninstall the rarely-used 3D Viewer and Paint 3D apps. Revert reinstalls them.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *Microsoft3DViewer* | Remove-AppxPackage -ErrorAction SilentlyContinue", "Get-AppxPackage *MSPaint* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *Microsoft3DViewer* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }", "Get-AppxPackage -AllUsers *MSPaint* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-gethelp-tips",
+      "name": "Remove Get Help & Tips",
+      "category": "Debloat",
+      "description": "Uninstall the Get Help and Tips apps. Revert reinstalls them.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *GetHelp* | Remove-AppxPackage -ErrorAction SilentlyContinue", "Get-AppxPackage *Getstarted* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *GetHelp* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }", "Get-AppxPackage -AllUsers *Getstarted* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-solitaire",
+      "name": "Remove Solitaire Collection",
+      "category": "Debloat",
+      "description": "Uninstall the Microsoft Solitaire Collection. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *MicrosoftSolitaireCollection* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *MicrosoftSolitaireCollection* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-maps",
+      "name": "Remove Maps",
+      "category": "Debloat",
+      "description": "Uninstall the Windows Maps app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *WindowsMaps* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *WindowsMaps* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-people",
+      "name": "Remove People app",
+      "category": "Debloat",
+      "description": "Uninstall the People app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *Microsoft.People* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *Microsoft.People* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-phonelink",
+      "name": "Remove Phone Link",
+      "category": "Debloat",
+      "description": "Uninstall the Phone Link (Your Phone) app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *YourPhone* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *YourPhone* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-clipchamp",
+      "name": "Remove Clipchamp",
+      "category": "Debloat",
+      "description": "Uninstall the Clipchamp video editor. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *Clipchamp* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *Clipchamp* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-quickassist",
+      "name": "Remove Quick Assist",
+      "category": "Debloat",
+      "description": "Uninstall the Quick Assist remote-help app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *QuickAssist* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *QuickAssist* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-todo",
+      "name": "Remove Microsoft To Do",
+      "category": "Debloat",
+      "description": "Uninstall the To Do app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *Todos* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *Todos* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-feedback",
+      "name": "Remove Feedback Hub",
+      "category": "Debloat",
+      "description": "Uninstall the Feedback Hub app. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *WindowsFeedbackHub* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *WindowsFeedbackHub* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-cortana-app",
+      "name": "Remove Cortana app",
+      "category": "Debloat",
+      "description": "Uninstall the Cortana app package. Revert reinstalls it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Get-AppxPackage *549981C3F5F10* | Remove-AppxPackage -ErrorAction SilentlyContinue"],
+      "revert": ["Get-AppxPackage -AllUsers *549981C3F5F10* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "debloat-onedrive",
+      "name": "Uninstall OneDrive",
+      "category": "Debloat",
+      "description": "Remove OneDrive entirely (runs its own uninstaller). Revert runs the installer to put it back.",
+      "impact": "low", "risk": "medium", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Process -Name OneDrive -Force -ErrorAction SilentlyContinue", "$o=\"$env:SystemRoot\\System32\\OneDriveSetup.exe\"; if(-not (Test-Path $o)){ $o=\"$env:SystemRoot\\SysWOW64\\OneDriveSetup.exe\" }; if(Test-Path $o){ Start-Process $o -ArgumentList '/uninstall' -Wait }"],
+      "revert": ["$o=\"$env:SystemRoot\\System32\\OneDriveSetup.exe\"; if(-not (Test-Path $o)){ $o=\"$env:SystemRoot\\SysWOW64\\OneDriveSetup.exe\" }; if(Test-Path $o){ Start-Process $o }"]
+    },
+    {
+      "id": "rc-win10-menu",
+      "name": "Restore the Windows 10 right-click menu",
+      "category": "Explorer",
+      "description": "Bring back the full classic context menu (no 'Show more options'). Restart Explorer or reboot after.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": true, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32\" /f /ve"],
+      "revert": ["reg delete \"HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\" /f"]
+    },
+    {
+      "id": "rc-taskbar-endtask",
+      "name": "Add 'End task' to taskbar menu",
+      "category": "Explorer",
+      "description": "Put an 'End task' option on the taskbar right-click menu to kill frozen apps fast.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings\" /v TaskbarEndTask /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings\" /v TaskbarEndTask /t REG_DWORD /d 0 /f"]
+    },
+    {
+      "id": "rc-copyto",
+      "name": "Add 'Copy to folder' to right-click",
+      "category": "Explorer",
+      "description": "Add a 'Copy to folder...' entry to the file right-click menu.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Classes\\AllFilesystemObjects\\shellex\\ContextMenuHandlers\\CopyTo\" /ve /d \"{C2FBB630-2971-11D1-A18C-00C04FD75D13}\" /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Classes\\AllFilesystemObjects\\shellex\\ContextMenuHandlers\\CopyTo\" /f"]
+    },
+    {
+      "id": "rc-moveto",
+      "name": "Add 'Move to folder' to right-click",
+      "category": "Explorer",
+      "description": "Add a 'Move to folder...' entry to the file right-click menu.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Classes\\AllFilesystemObjects\\shellex\\ContextMenuHandlers\\MoveTo\" /ve /d \"{C2FBB631-2971-11D1-A18C-00C04FD75D13}\" /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Classes\\AllFilesystemObjects\\shellex\\ContextMenuHandlers\\MoveTo\" /f"]
+    },
+    {
+      "id": "expl-this-pc",
+      "name": "Open Explorer to This PC",
+      "category": "Explorer",
+      "description": "Open File Explorer to 'This PC' instead of Quick Access/Home.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v LaunchTo /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v LaunchTo /t REG_DWORD /d 2 /f"]
+    },
+    {
+      "id": "expl-show-hidden",
+      "name": "Show hidden files",
+      "category": "Explorer",
+      "description": "Show hidden files and folders in Explorer.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Hidden /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v Hidden /t REG_DWORD /d 2 /f"]
+    },
+    {
+      "id": "expl-taskbar-left",
+      "name": "Taskbar icons on the left",
+      "category": "Explorer",
+      "description": "Align the taskbar to the left (Windows 10 style). Revert centers it.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarAl /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarAl /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "expl-hide-search",
+      "name": "Hide taskbar search box",
+      "category": "Explorer",
+      "description": "Remove the search box/button from the taskbar. Revert shows the icon.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\" /v SearchboxTaskbarMode /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "expl-hide-taskview",
+      "name": "Hide Task View button",
+      "category": "Explorer",
+      "description": "Remove the Task View button from the taskbar.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowTaskViewButton /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowTaskViewButton /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "expl-hide-widgets",
+      "name": "Hide Widgets button",
+      "category": "Explorer",
+      "description": "Remove the Widgets button from the taskbar.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarDa /t REG_DWORD /d 0 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v TaskbarDa /t REG_DWORD /d 1 /f"]
+    },
+    {
+      "id": "expl-seconds-clock",
+      "name": "Show seconds in the clock",
+      "category": "Explorer",
+      "description": "Show seconds in the taskbar clock. Revert hides them.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 1 /f"],
+      "revert": ["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 0 /f"]
+    },
+    {
+      "id": "expl-sticky-keys",
+      "name": "Disable Sticky Keys shortcut",
+      "category": "Explorer",
+      "description": "Stop the Sticky Keys prompt when you press Shift 5 times.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKCU\\Control Panel\\Accessibility\\StickyKeys\" /v Flags /t REG_SZ /d 506 /f"],
+      "revert": ["reg add \"HKCU\\Control Panel\\Accessibility\\StickyKeys\" /v Flags /t REG_SZ /d 510 /f"]
+    },
+    {
+      "id": "svc-xbox",
+      "name": "Disable Xbox services",
+      "category": "Services",
+      "description": "Turn off the Xbox background services (Live, Game Save, networking). Revert sets them back to Manual.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name XblAuthManager -Force -ErrorAction SilentlyContinue", "Set-Service -Name XblAuthManager -StartupType Disabled -ErrorAction SilentlyContinue", "Set-Service -Name XblGameSave -StartupType Disabled -ErrorAction SilentlyContinue", "Set-Service -Name XboxNetApiSvc -StartupType Disabled -ErrorAction SilentlyContinue", "Set-Service -Name XboxGipSvc -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name XblAuthManager -StartupType Manual -ErrorAction SilentlyContinue", "Set-Service -Name XblGameSave -StartupType Manual -ErrorAction SilentlyContinue", "Set-Service -Name XboxNetApiSvc -StartupType Manual -ErrorAction SilentlyContinue", "Set-Service -Name XboxGipSvc -StartupType Manual -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "svc-fax",
+      "name": "Disable Fax service",
+      "category": "Services",
+      "description": "Turn off the Fax service. Revert sets it back to Manual.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name Fax -Force -ErrorAction SilentlyContinue", "Set-Service -Name Fax -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name Fax -StartupType Manual -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "svc-remote-registry",
+      "name": "Disable Remote Registry",
+      "category": "Services",
+      "description": "Keep the registry from being edited over the network (usually already off). Revert sets it to Manual.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name RemoteRegistry -Force -ErrorAction SilentlyContinue", "Set-Service -Name RemoteRegistry -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name RemoteRegistry -StartupType Manual -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "svc-maps",
+      "name": "Disable Downloaded Maps Manager",
+      "category": "Services",
+      "description": "Turn off the offline-maps background service. Revert sets it back to Automatic.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name MapsBroker -Force -ErrorAction SilentlyContinue", "Set-Service -Name MapsBroker -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name MapsBroker -StartupType Automatic -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "svc-search-index",
+      "name": "Disable Search indexing",
+      "category": "Services",
+      "description": "Stop Windows Search indexing - lighter on old/HDD PCs, but search gets slower. Revert turns it back on.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name WSearch -Force -ErrorAction SilentlyContinue", "Set-Service -Name WSearch -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name WSearch -StartupType Automatic -ErrorAction SilentlyContinue", "Start-Service -Name WSearch -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "svc-print-spooler",
+      "name": "Disable Print Spooler",
+      "category": "Services",
+      "description": "Turn off printing support - only if you don't use a printer. Revert turns it back on.",
+      "impact": "low", "risk": "medium", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["Stop-Service -Name Spooler -Force -ErrorAction SilentlyContinue", "Set-Service -Name Spooler -StartupType Disabled -ErrorAction SilentlyContinue"],
+      "revert": ["Set-Service -Name Spooler -StartupType Automatic -ErrorAction SilentlyContinue", "Start-Service -Name Spooler -ErrorAction SilentlyContinue"]
+    },
+    {
+      "id": "fix-wu-policy",
+      "name": "Fix: remove Windows Update blocks",
+      "category": "Fixes",
+      "description": "The usual reason updates stop showing: clears policies that hide or pin Windows Update. One-time.",
+      "impact": "high", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["$au='HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU'; if(Test-Path $au){ 'NoAutoUpdate','UseWUServer' | ForEach-Object { Remove-ItemProperty -Path $au -Name $_ -ErrorAction SilentlyContinue } }", "$wu='HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate'; if(Test-Path $wu){ 'WUServer','WUStatusServer','TargetReleaseVersion','TargetReleaseVersionInfo' | ForEach-Object { Remove-ItemProperty -Path $wu -Name $_ -ErrorAction SilentlyContinue } }", "Write-Output 'Windows Update policy blocks cleared (any already-absent ones were skipped).'"],
+      "revert": []
+    },
+    {
+      "id": "fix-wu-service",
+      "name": "Fix: restore Windows Update services",
+      "category": "Fixes",
+      "description": "Re-enable and start the services Windows Update needs if a debloat script disabled them. One-time.",
+      "impact": "high", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["Set-Service -Name wuauserv -StartupType Manual -ErrorAction SilentlyContinue", "Set-Service -Name UsoSvc -StartupType Automatic -ErrorAction SilentlyContinue", "Set-Service -Name bits -StartupType Automatic -ErrorAction SilentlyContinue", "Set-Service -Name dosvc -StartupType Automatic -ErrorAction SilentlyContinue", "Set-Service -Name cryptsvc -StartupType Automatic -ErrorAction SilentlyContinue", "Start-Service -Name cryptsvc,bits,UsoSvc -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "fix-wu-reset",
+      "name": "Fix: reset Windows Update (deep)",
+      "category": "Fixes",
+      "description": "Rebuild the update caches when updates are stuck or corrupted. Reboot after. One-time.",
+      "impact": "high", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": false,
+      "apply": ["Stop-Service -Name wuauserv,bits,cryptsvc,msiserver -Force -ErrorAction SilentlyContinue", "Rename-Item -Path \"$env:SystemRoot\\SoftwareDistribution\" -NewName \"SoftwareDistribution.old\" -ErrorAction SilentlyContinue", "Rename-Item -Path \"$env:SystemRoot\\System32\\catroot2\" -NewName \"catroot2.old\" -ErrorAction SilentlyContinue", "Start-Service -Name cryptsvc,bits,wuauserv -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "fix-sfc-dism",
+      "name": "Fix: repair system files (DISM + SFC)",
+      "category": "Fixes",
+      "description": "Repair a damaged Windows image and system files. Can take 15-30 min and needs internet. One-time.",
+      "impact": "high", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["DISM.exe /Online /Cleanup-Image /RestoreHealth", "sfc.exe /scannow"],
+      "revert": []
+    },
+    {
+      "id": "fix-network-reset",
+      "name": "Fix: reset network stack",
+      "category": "Fixes",
+      "description": "Reset Winsock and TCP/IP and re-register DNS - fixes 'connected but nothing loads'. Reboot after. One-time.",
+      "impact": "medium", "risk": "medium", "requiresAdmin": true, "needsRestart": true, "reversible": false,
+      "apply": ["netsh winsock reset", "netsh int ip reset", "ipconfig /flushdns", "ipconfig /registerdns"],
+      "revert": []
+    },
+    {
+      "id": "fix-usb-detect",
+      "name": "Fix: USB drive not detected",
+      "category": "Fixes",
+      "description": "USB stick or drive won't show up? Re-enables USB storage, clears write-protect and hide-drive policies, frees stuck drive letters, and rescans hardware. One-time.",
+      "impact": "high", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\USBSTOR\" /v Start /t REG_DWORD /d 3 /f", "Remove-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\StorageDevicePolicies' -Name WriteProtect -ErrorAction SilentlyContinue", "foreach($h in 'HKCU:','HKLM:'){ Remove-ItemProperty -Path \"$h\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" -Name NoDrives -ErrorAction SilentlyContinue }", "Start-Service USBSTOR -ErrorAction SilentlyContinue", "Get-Partition -ErrorAction SilentlyContinue | Where-Object { $_.Type -notin 'Reserved','Recovery','System' -and -not $_.DriveLetter -and $_.Size -gt 0 } | ForEach-Object { try { $_ | Add-PartitionAccessPath -AssignDriveLetter -ErrorAction Stop; 'Assigned a drive letter to a volume that had none.' } catch {} }", "pnputil /scan-devices", "Write-Output 'USB storage re-enabled and hardware rescanned. If the drive still does not appear, it is a cable/port/physical issue - try a rear USB port (directly on the PC) or another computer.'"],
+      "revert": []
+    },
+    {
+      "id": "upd-pause-updates",
+      "name": "Pause updates (~35 days)",
+      "category": "Updates",
+      "description": "Hold off all Windows updates for about 35 days. Revert resumes them.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["$k='HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings'; if(-not (Test-Path $k)){ New-Item -Path $k -Force | Out-Null }; $now=(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); $end=(Get-Date).AddDays(35).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); Set-ItemProperty $k PauseUpdatesExpiryTime $end; Set-ItemProperty $k PauseFeatureUpdatesStartTime $now; Set-ItemProperty $k PauseFeatureUpdatesEndTime $end; Set-ItemProperty $k PauseQualityUpdatesStartTime $now; Set-ItemProperty $k PauseQualityUpdatesEndTime $end"],
+      "revert": ["$k='HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings'; 'PauseUpdatesExpiryTime','PauseFeatureUpdatesStartTime','PauseFeatureUpdatesEndTime','PauseQualityUpdatesStartTime','PauseQualityUpdatesEndTime' | ForEach-Object { Remove-ItemProperty -Path $k -Name $_ -ErrorAction SilentlyContinue }"]
+    },
+    {
+      "id": "upd-no-auto-restart",
+      "name": "Stop forced update restarts",
+      "category": "Updates",
+      "description": "Don't auto-restart to finish updates while you're signed in.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\" /v NoAutoRebootWithLoggedOnUsers /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\" /v NoAutoRebootWithLoggedOnUsers /f"]
+    },
+    {
+      "id": "upd-active-hours",
+      "name": "Set wide active hours (6am-11pm)",
+      "category": "Updates",
+      "description": "Keep updates from restarting during your day. Revert returns to automatic.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v SmartActiveHoursState /t REG_DWORD /d 0 /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v ActiveHoursStart /t REG_DWORD /d 6 /f", "reg add \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v ActiveHoursEnd /t REG_DWORD /d 23 /f"],
+      "revert": ["reg add \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v SmartActiveHoursState /t REG_DWORD /d 1 /f", "reg delete \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v ActiveHoursStart /f", "reg delete \"HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings\" /v ActiveHoursEnd /f"]
+    },
+    {
+      "id": "upd-no-driver-updates",
+      "name": "Skip driver updates via Windows Update",
+      "category": "Updates",
+      "description": "Stop Windows Update from replacing your drivers (install those yourself).",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": true,
+      "apply": ["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f"],
+      "revert": ["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\" /v ExcludeWUDriversInQualityUpdate /f"]
+    },
+    {
+      "id": "maint-benchmark",
+      "name": "Quick benchmark (safe, read-only)",
+      "category": "Maintenance",
+      "description": "Measure CPU, RAM and disk speed right now - changes nothing. Run before and after a tweak to compare.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Invoke-QuickBenchmark"],
+      "revert": []
+    },
+    {
+      "id": "maint-network-test",
+      "name": "Network test (ping + speed)",
+      "category": "Maintenance",
+      "description": "Pings Cloudflare and Google for latency, then runs a quick download-speed test. Read-only - changes nothing.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Invoke-NetworkTest"],
+      "revert": []
+    },
+    {
+      "id": "maint-dns-benchmark",
+      "name": "DNS benchmark (find fastest)",
+      "category": "Maintenance",
+      "description": "Times how fast Cloudflare, Google, Quad9 and AdGuard resolve names, and names the fastest. Read-only.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Invoke-DnsBenchmark"],
+      "revert": []
+    },
+    {
+      "id": "maint-free-ram",
+      "name": "Free up RAM now",
+      "category": "Maintenance",
+      "description": "Instantly trim app memory so cached pages leave RAM. Run it when things feel sluggish.",
+      "impact": "medium", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Optimize-RAM"],
+      "revert": []
+    },
+    {
+      "id": "maint-purge-standby",
+      "name": "Purge standby cache (free RAM)",
+      "category": "Maintenance",
+      "description": "Clear cached 'standby' memory back to free RAM, like RAMMap. Great before a big game. One-time.",
+      "impact": "medium", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["Clear-StandbyList"],
+      "revert": []
+    },
+    {
+      "id": "maint-trim-ssd",
+      "name": "Optimize / TRIM drives",
+      "category": "Maintenance",
+      "description": "Run TRIM on your SSDs to keep them fast and healthy. One-time; safe to repeat.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["Get-Volume | Where-Object { $_.DriveType -eq 'Fixed' -and $_.DriveLetter } | ForEach-Object { Optimize-Volume -DriveLetter $_.DriveLetter -ReTrim -ErrorAction SilentlyContinue }"],
+      "revert": []
+    },
+    {
+      "id": "maint-empty-recyclebin",
+      "name": "Empty Recycle Bin",
+      "category": "Maintenance",
+      "description": "Permanently delete everything in the Recycle Bin. One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Clear-RecycleBin -Force -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "maint-clear-store-cache",
+      "name": "Reset Microsoft Store cache",
+      "category": "Maintenance",
+      "description": "Clear the Store cache to fix download/install glitches (wsreset). One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["wsreset.exe"],
+      "revert": []
+    },
+    {
+      "id": "maint-clear-thumbnails",
+      "name": "Clear thumbnail cache",
+      "category": "Maintenance",
+      "description": "Delete the thumbnail cache to fix broken or wrong image previews. One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Get-ChildItem \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Explorer\" -Filter 'thumbcache_*.db' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "maint-restart-explorer",
+      "name": "Restart Explorer",
+      "category": "Maintenance",
+      "description": "Restart the desktop/taskbar when it freezes or acts up. One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "clean-temp",
+      "name": "Clear temp files",
+      "category": "Maintenance",
+      "description": "Delete your user TEMP folder contents (locked files are skipped). One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": false, "needsRestart": false, "reversible": false,
+      "apply": ["Get-ChildItem -Path $env:TEMP -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"],
+      "revert": []
+    },
+    {
+      "id": "clean-windows-temp",
+      "name": "Clear Windows temp files",
+      "category": "Maintenance",
+      "description": "Delete C:\\Windows\\Temp contents (locked files are skipped). One-time.",
+      "impact": "low", "risk": "low", "requiresAdmin": true, "needsRestart": false, "reversible": false,
+      "apply": ["Get-ChildItem -Path 'C:\\Windows\\Temp' -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"],
+      "revert": []
+    }
+  ]
+}

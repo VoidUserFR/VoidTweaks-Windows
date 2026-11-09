@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "presets": [
+    {
+      "id": "baseline-defaults",
+      "name": "Everything OFF (Windows defaults)",
+      "description": "Reverts every reversible tweak back to stock Windows. A clean slate before you try another preset.",
+      "mode": "revert-all"
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "description": "Snappy and distraction-free for work: faster UI, no suggestions, AI/Copilot out of the way, classic right-click menu.",
+      "revertOthers": false,
+      "apply": ["perf-startup-delay", "perf-sysmain", "perf-high-power-plan", "perf-power-throttling-off", "visual-best-performance", "visual-transparency-off", "visual-menu-delay", "visual-animations-off", "priv-suggested-content", "priv-start-tracking", "ai-bing-search-off", "ai-copilot-off", "ai-copilot-taskbar-off", "debloat-widgets", "rc-win10-menu", "net-qos-bandwidth", "upd-active-hours"]
+    },
+    {
+      "id": "gaming",
+      "name": "High-end Gaming",
+      "description": "Lowest latency and full performance: Game Mode, no DVR, MMCSS game priority, Ultimate power, latency + network tweaks.",
+      "revertOthers": false,
+      "apply": ["game-mode-on", "game-dvr-off", "game-gpu-scheduling", "game-mouse-accel-off", "game-system-responsiveness", "game-games-task", "perf-ultimate-power", "perf-power-throttling-off", "adv-dynamic-tick-off", "net-nagle-off", "net-throttling-off", "net-autotuning-off", "net-rsc-off", "net-ecn-off", "visual-best-performance", "visual-animations-off", "upd-no-auto-restart"]
+    },
+    {
+      "id": "privacy",
+      "name": "Privacy-focused",
+      "description": "Turns off telemetry, tracking, Cortana, location, feedback and AI data collection (Recall/Copilot), plus private DNS.",
+      "revertOthers": false,
+      "apply": ["priv-advertising-id", "priv-telemetry-min", "priv-tailored", "priv-activity-history", "priv-suggested-content", "priv-start-tracking", "priv-diagtrack", "priv-cortana-off", "priv-location-off", "priv-feedback-off", "priv-consumer-features", "ai-recall-off", "ai-copilot-off", "ai-bing-search-off", "ai-edge-copilot-off", "net-do-p2p-off", "net-dns-cloudflare"]
+    },
+    {
+      "id": "old-slow-pc",
+      "name": "Old / Slow PC",
+      "description": "Maximum performance on aging hardware: all visual effects off, lighter services, less background work, more free RAM.",
+      "revertOthers": false,
+      "apply": ["perf-startup-delay", "perf-sysmain", "perf-hibernation-off", "perf-high-power-plan", "perf-power-throttling-off", "visual-best-performance", "visual-transparency-off", "visual-animations-off", "visual-menu-delay", "priv-suggested-content", "debloat-widgets", "debloat-xbox", "adv-mem-compression-off", "game-dvr-off", "svc-search-index", "svc-fax", "svc-maps", "net-do-p2p-off", "upd-active-hours"]
+    }
+  ]
+}

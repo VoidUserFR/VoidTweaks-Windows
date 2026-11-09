@@ -1,0 +1,17 @@
+# Build output
+VoidTweaksApp/bin/
+VoidTweaksApp/obj/
+
+# Local release artifacts (attached to GitHub Releases instead of committed)
+release/
+installer/
+pubbuild/
+
+# User / IDE
+*.user
+.vs/
+*.suo
+
+# OS
+Thumbs.db
+desktop.ini

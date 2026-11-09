@@ -1,0 +1,267 @@
+<title>OpenTweaks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: a utility console — sticky toolbar of filters over a responsive card grid. */
+  :root {
+    --bg: #f4f5f7; --surface: #ffffff; --surface-2: #eceef1; --fg: #1c2024;
+    --muted: #5c6670; --line: #d9dde2; --accent: #2f6f4f; --accent-fg: #ffffff;
+    --code-bg: #1c2230; --code-fg: #e5e9f0;
+    --risk-low: #2f7d53; --risk-med: #b8762b; --risk-high: #c0493c;
+    --chip: #e7eaef;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --fg: #e6e9ee;
+      --muted: #9aa4b2; --line: #272e39; --accent: #58b083; --accent-fg: #07130c;
+      --code-bg: #0a0d12; --code-fg: #d7deea;
+      --risk-low: #5cc088; --risk-med: #e0a44e; --risk-high: #e8705f;
+      --chip: #222834; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1d222b; --fg: #e6e9ee;
+    --muted: #9aa4b2; --line: #272e39; --accent: #58b083; --accent-fg: #07130c;
+    --code-bg: #0a0d12; --code-fg: #d7deea;
+    --risk-low: #5cc088; --risk-med: #e0a44e; --risk-high: #e8705f;
+    --chip: #222834; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.5; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+
+  header.hero { padding-block: 32px 20px; border-bottom: 1px solid var(--line); }
+  .brandrow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .ver { font-family: var(--mono); font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
+  .tag { font-size: .95rem; color: var(--muted); margin: 8px 0 0; max-width: 62ch; }
+  .stats { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; font-size: .82rem; color: var(--muted); }
+  .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .pill-safe { color: var(--accent); font-weight: 600; }
+
+  .toolbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .searchrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type="search"] { flex: 1 1 220px; min-width: 0; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: var(--sans); }
+  input[type="search"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chip { font-size: .78rem; font-family: var(--sans); background: var(--chip); color: var(--fg); border: 1px solid transparent; border-radius: 999px; padding: 5px 11px; cursor: pointer; user-select: none; }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+  .chip.toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+  .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
+
+  .count { font-size: .78rem; color: var(--muted); margin: 14px 0 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-top: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .card.rec { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+  .card h3 { margin: 0; font-size: 1rem; letter-spacing: -0.01em; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .badge { font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; padding: 2px 7px; border-radius: 5px; background: var(--surface-2); color: var(--muted); }
+  .badge.cat { color: var(--fg); }
+  .risk-low { color: var(--risk-low); } .risk-medium { color: var(--risk-med); } .risk-high { color: var(--risk-high); }
+  .badge.flag { background: transparent; border: 1px solid var(--line); }
+  .badge.rec { background: var(--accent); color: var(--accent-fg); }
+  .desc { font-size: .86rem; color: var(--muted); margin: 0; }
+
+  .cmdblock { margin-top: 2px; }
+  .cmdhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .cmdlabel { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--muted); }
+  .cmdlabel.apply { color: var(--risk-low); }
+  .cmdlabel.revert { color: var(--risk-med); }
+  pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: 8px; padding: 10px 11px; overflow-x: auto; font-family: var(--mono); font-size: .76rem; line-height: 1.45; }
+  pre code { white-space: pre; }
+  .copy { font-family: var(--sans); font-size: .72rem; background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .copy:active { transform: translateY(1px); }
+  .copy.done { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  .norevert { font-size: .78rem; color: var(--muted); font-style: italic; }
+
+  footer { margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+  footer code { font-family: var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: .78rem; }
+  footer a { color: var(--accent); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="brandrow">
+      <h1>OpenTweaks</h1>
+      <span class="ver" id="ver">v1</span>
+    </div>
+    <p class="tag">A transparent, fully reversible Windows tweak catalog. Browse what each tweak does, see the <span class="pill-safe">exact command</span> it runs and how to undo it, and copy it into PowerShell. Nothing here phones home, locks behind a login, or hides what it changes.</p>
+    <div class="stats">
+      <span><b id="stat-count">0</b> tweaks</span>
+      <span><b id="stat-cats">0</b> categories</span>
+      <span><b id="stat-rec">0</b> in the slow-PC set</span>
+      <span class="pill-safe">offline · open · reversible</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="searchrow">
+      <input type="search" id="q" placeholder="Search tweaks (e.g. telemetry, mouse, startup)…" aria-label="Search tweaks">
+    </div>
+    <div class="filters" id="cats" role="group" aria-label="Filter by category"></div>
+    <div class="filters">
+      <button class="chip toggle" id="f-rec" aria-pressed="false">Recommended for old PCs</button>
+      <span class="sep"></span>
+      <button class="chip toggle" id="f-noadmin" aria-pressed="false">No admin needed</button>
+      <button class="chip toggle" id="f-lowrisk" aria-pressed="false">Low risk only</button>
+    </div>
+  </div>
+
+  <p class="count" id="count"></p>
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden>No tweaks match those filters.</p>
+
+  <footer>
+    <p><strong>How to use:</strong> copy a command and run it in <strong>PowerShell</strong> (open as Administrator for anything marked <em>admin</em>). This page only shows and copies commands — it can't change your system by itself. The matching engine <code>Invoke-OpenTweaks.ps1</code> can apply a whole category, make a System Restore point first, and show which tweaks are already applied with <code>-Status</code>.</p>
+    <p>Every tweak marked <em>reversible</em> ships a Revert command. For an old, slow PC, start with the <strong>Recommended</strong> set and reboot afterwards.</p>
+  </footer>
+</div>
+
+<script type="application/json" id="catalog">
+{
+  "schemaVersion": 1,
+  "name": "OpenTweaks",
+  "categories": ["Performance", "Gaming", "Privacy", "Network", "Visual", "Advanced", "Debloat", "Cleanup"],
+  "recommended": ["perf-startup-delay","perf-sysmain","perf-high-power-plan","visual-best-performance","visual-transparency-off","visual-menu-delay","priv-suggested-content","game-dvr-off","debloat-widgets","clean-temp","clean-windows-temp"],
+  "tweaks": [
+    {"id":"perf-startup-delay","name":"Remove startup app delay","category":"Performance","description":"Removes the ~10s delay Windows adds before launching startup apps after login.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize\" /v StartupDelayInMSec /t REG_DWORD /d 0 /f"],"revert":["reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize\" /v StartupDelayInMSec /f"]},
+    {"id":"perf-priority-separation","name":"Favor foreground apps (Win32PrioritySeparation)","category":"Performance","description":"Tunes CPU quantum/priority to favor the active window. Apply = foreground boost (0x26), revert = Windows default (0x02).","impact":"medium","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 38 /f"],"revert":["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl\" /v Win32PrioritySeparation /t REG_DWORD /d 2 /f"]},
+    {"id":"perf-hibernation-off","name":"Disable hibernation","category":"Performance","description":"Turns off hibernation and deletes hiberfil.sys (frees disk equal to your RAM). Also disables Fast Startup. Revert re-enables it.","impact":"medium","risk":"medium","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["powercfg /hibernate off"],"revert":["powercfg /hibernate on"]},
+    {"id":"perf-high-power-plan","name":"Use High Performance power plan","category":"Performance","description":"Switches the active power plan to High Performance. Revert returns to Balanced.","impact":"medium","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"],"revert":["powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e"]},
+    {"id":"perf-sysmain","name":"Disable SysMain (Superfetch)","category":"Performance","description":"Stops the SysMain prefetch service. Can help on SSDs / low-RAM systems; may slightly slow app launches on HDDs. Revert restores Automatic start.","impact":"medium","risk":"medium","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["Stop-Service -Name SysMain -ErrorAction SilentlyContinue","Set-Service -Name SysMain -StartupType Disabled"],"revert":["Set-Service -Name SysMain -StartupType Automatic","Start-Service -Name SysMain -ErrorAction SilentlyContinue"]},
+    {"id":"game-mode-on","name":"Enable Game Mode","category":"Gaming","description":"Turns on Windows Game Mode, which deprioritizes background work while a game is focused.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AllowAutoGameMode /t REG_DWORD /d 1 /f","reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\GameBar\" /v AllowAutoGameMode /t REG_DWORD /d 0 /f"]},
+    {"id":"game-dvr-off","name":"Disable Game DVR background recording","category":"Gaming","description":"Disables the Game DVR/Game Bar background capture that can cost a few FPS. Revert re-enables it.","impact":"medium","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 0 /f","reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\" /v AllowGameDVR /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\System\\GameConfigStore\" /v GameDVR_Enabled /t REG_DWORD /d 1 /f","reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR\" /v AllowGameDVR /f"]},
+    {"id":"game-gpu-scheduling","name":"Hardware-accelerated GPU scheduling","category":"Gaming","description":"Enables HAGS (HwSchMode=2). Can reduce latency on supported GPUs. Needs a restart. Revert sets it back to default.","impact":"medium","risk":"medium","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 2 /f"],"revert":["reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\" /v HwSchMode /t REG_DWORD /d 1 /f"]},
+    {"id":"game-mouse-accel-off","name":"Disable mouse acceleration","category":"Gaming","description":"Turns off 'Enhance pointer precision' for a 1:1 mouse feel. Revert restores Windows defaults.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 0 /f","reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 0 /f","reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 0 /f"],"revert":["reg add \"HKCU\\Control Panel\\Mouse\" /v MouseSpeed /t REG_SZ /d 1 /f","reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold1 /t REG_SZ /d 6 /f","reg add \"HKCU\\Control Panel\\Mouse\" /v MouseThreshold2 /t REG_SZ /d 10 /f"]},
+    {"id":"priv-advertising-id","name":"Disable advertising ID","category":"Privacy","description":"Stops apps using your advertising ID for cross-app tracking.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\" /v Enabled /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\" /v Enabled /t REG_DWORD /d 1 /f"]},
+    {"id":"priv-telemetry-min","name":"Minimize diagnostic telemetry","category":"Privacy","description":"Sets diagnostic data to the minimum the SKU allows (AllowTelemetry=0). Home/Pro keep a required-diagnostics floor. Revert sets it to Full (3).","impact":"low","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\" /v AllowTelemetry /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\" /v AllowTelemetry /t REG_DWORD /d 3 /f"]},
+    {"id":"priv-tailored","name":"Disable tailored experiences","category":"Privacy","description":"Stops Windows using diagnostic data to personalize tips and ads.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy\" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy\" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 1 /f"]},
+    {"id":"priv-activity-history","name":"Disable activity history","category":"Privacy","description":"Stops Windows collecting and uploading your activity timeline.","impact":"low","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v EnableActivityFeed /t REG_DWORD /d 0 /f","reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v PublishUserActivities /t REG_DWORD /d 0 /f"],"revert":["reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v EnableActivityFeed /f","reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v PublishUserActivities /f"]},
+    {"id":"priv-suggested-content","name":"Disable suggested content & tips","category":"Privacy","description":"Turns off Start/Settings suggestions, tips, and 'recommended' promoted content.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f","reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SystemPaneSuggestionsEnabled /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 1 /f","reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SystemPaneSuggestionsEnabled /t REG_DWORD /d 1 /f"]},
+    {"id":"net-nagle-off","name":"Disable Nagle's algorithm","category":"Network","description":"Sets TcpAckFrequency=1 and TCPNoDelay=1 on all network interfaces to reduce latency for twitchy games. Revert removes both values (back to default batching).","impact":"medium","risk":"medium","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces' | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name TcpAckFrequency -Value 1 -PropertyType DWord -Force | Out-Null; New-ItemProperty -Path $_.PSPath -Name TCPNoDelay -Value 1 -PropertyType DWord -Force | Out-Null }"],"revert":["Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces' | ForEach-Object { Remove-ItemProperty -Path $_.PSPath -Name TcpAckFrequency -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $_.PSPath -Name TCPNoDelay -ErrorAction SilentlyContinue }"]},
+    {"id":"net-throttling-off","name":"Disable network throttling index","category":"Network","description":"Removes the multimedia network throttle (sets index to 0xFFFFFFFF). Helps on fast connections. Revert restores default (10).","impact":"low","risk":"low","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 4294967295 /f"],"revert":["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f"]},
+    {"id":"net-do-p2p-off","name":"Disable Update delivery optimization (P2P)","category":"Network","description":"Stops Windows Update from uploading/downloading updates peer-to-peer. Revert restores default (LAN P2P).","impact":"low","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":true,"apply":["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization\\Config\" /v DODownloadMode /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization\\Config\" /v DODownloadMode /t REG_DWORD /d 1 /f"]},
+    {"id":"net-flush-dns","name":"Flush DNS cache","category":"Network","description":"One-time action: clears the DNS resolver cache. Fixes stale lookups. No revert needed.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":false,"apply":["ipconfig /flushdns"],"revert":[]},
+    {"id":"visual-best-performance","name":"Visual effects: best performance","category":"Visual","description":"Sets the performance options to 'Adjust for best performance' (disables animations/shadows). Revert hands control back to Windows.","impact":"medium","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\" /v VisualFXSetting /t REG_DWORD /d 2 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects\" /v VisualFXSetting /t REG_DWORD /d 0 /f"]},
+    {"id":"visual-transparency-off","name":"Disable transparency effects","category":"Visual","description":"Turns off window/taskbar transparency (Acrylic/Mica), a small GPU saving.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v EnableTransparency /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v EnableTransparency /t REG_DWORD /d 1 /f"]},
+    {"id":"visual-menu-delay","name":"Remove menu show delay","category":"Visual","description":"Sets MenuShowDelay to 0 for snappier menus. Revert restores the default (400 ms).","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 0 /f"],"revert":["reg add \"HKCU\\Control Panel\\Desktop\" /v MenuShowDelay /t REG_SZ /d 400 /f"]},
+    {"id":"visual-file-extensions","name":"Show file extensions","category":"Visual","description":"Quality-of-life + safety: always show known file extensions in Explorer.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 0 /f"],"revert":["reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v HideFileExt /t REG_DWORD /d 1 /f"]},
+    {"id":"adv-dynamic-tick-off","name":"Disable dynamic tick (latency)","category":"Advanced","description":"Keeps the system timer running at a steady rate instead of coalescing ticks. Can lower DPC latency for games/audio at a small idle-power cost. Needs a restart. Revert re-enables it.","impact":"medium","risk":"medium","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["bcdedit /set disabledynamictick yes"],"revert":["bcdedit /set disabledynamictick no"]},
+    {"id":"adv-platform-clock-off","name":"Remove forced HPET platform clock","category":"Advanced","description":"Ensures Windows is NOT forced onto the (often slower) HPET platform clock, letting it pick the best timer. Safe default for most systems. Revert clears the override.","impact":"low","risk":"medium","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["bcdedit /deletevalue useplatformclock"],"revert":["bcdedit /set useplatformclock true"]},
+    {"id":"adv-gpu-msi-mode","name":"Enable MSI mode for GPU","category":"Advanced","description":"Switches display adapters to Message-Signaled Interrupts, which can reduce latency/stutter. Needs a restart. Revert switches back to line-based interrupts. Advanced; test stability after.","impact":"medium","risk":"high","requiresAdmin":true,"needsRestart":true,"reversible":true,"apply":["Get-PnpDevice -Class Display -Status OK -ErrorAction SilentlyContinue | ForEach-Object { $p = \"HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\$($_.InstanceId)\\Device Parameters\\Interrupt Management\\MessageSignaledInterruptProperties\"; if (Test-Path $p) { New-ItemProperty -Path $p -Name MSISupported -Value 1 -PropertyType DWord -Force | Out-Null } }"],"revert":["Get-PnpDevice -Class Display -Status OK -ErrorAction SilentlyContinue | ForEach-Object { $p = \"HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\$($_.InstanceId)\\Device Parameters\\Interrupt Management\\MessageSignaledInterruptProperties\"; if (Test-Path $p) { New-ItemProperty -Path $p -Name MSISupported -Value 0 -PropertyType DWord -Force | Out-Null } }"]},
+    {"id":"debloat-xbox","name":"Remove Xbox apps","category":"Debloat","description":"Removes the Xbox app bundle for the current user (not Game Bar services). Frees background resources. Revert re-registers them from the on-disk package if still present.","impact":"low","risk":"medium","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["Get-AppxPackage *Xbox* | Where-Object { $_.Name -notlike '*GameCallableUI*' } | Remove-AppxPackage -ErrorAction SilentlyContinue"],"revert":["Get-AppxPackage -AllUsers *Xbox* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]},
+    {"id":"debloat-widgets","name":"Remove Widgets (Web Experience)","category":"Debloat","description":"Removes the Windows Widgets / Web Experience Pack that drives the taskbar news-and-interests panel. Revert re-registers it if still on disk.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":true,"apply":["Get-AppxPackage *WebExperience* | Remove-AppxPackage -ErrorAction SilentlyContinue"],"revert":["Get-AppxPackage -AllUsers *WebExperience* | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }"]},
+    {"id":"clean-temp","name":"Clear temp files","category":"Cleanup","description":"One-time action: deletes the contents of your user TEMP folder (locked files are skipped). No revert.","impact":"low","risk":"low","requiresAdmin":false,"needsRestart":false,"reversible":false,"apply":["Get-ChildItem -Path $env:TEMP -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"],"revert":[]},
+    {"id":"clean-windows-temp","name":"Clear Windows temp files","category":"Cleanup","description":"One-time action: deletes contents of C:\\Windows\\Temp (locked files skipped). No revert.","impact":"low","risk":"low","requiresAdmin":true,"needsRestart":false,"reversible":false,"apply":["Get-ChildItem -Path 'C:\\Windows\\Temp' -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"],"revert":[]}
+  ]
+}
+</script>
+
+<script>
+  const data = JSON.parse(document.getElementById('catalog').textContent);
+  const recSet = new Set(data.recommended);
+  const tweaks = data.tweaks.map(t => ({ ...t, recommended: recSet.has(t.id) }));
+  const state = { q: '', cat: 'All', rec: false, noadmin: false, lowrisk: false };
+
+  document.getElementById('stat-count').textContent = tweaks.length;
+  document.getElementById('stat-cats').textContent = data.categories.length;
+  document.getElementById('stat-rec').textContent = data.recommended.length;
+
+  // category chips
+  const catBar = document.getElementById('cats');
+  ['All', ...data.categories].forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = c;
+    b.setAttribute('aria-pressed', c === 'All');
+    b.addEventListener('click', () => {
+      state.cat = c;
+      [...catBar.children].forEach(x => x.setAttribute('aria-pressed', x === b));
+      render();
+    });
+    catBar.appendChild(b);
+  });
+
+  function esc(s){ return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+  function toggle(id, key) {
+    const el = document.getElementById(id);
+    el.addEventListener('click', () => {
+      state[key] = !state[key];
+      el.setAttribute('aria-pressed', state[key]);
+      render();
+    });
+  }
+  toggle('f-rec', 'rec'); toggle('f-noadmin', 'noadmin'); toggle('f-lowrisk', 'lowrisk');
+  document.getElementById('q').addEventListener('input', e => { state.q = e.target.value.toLowerCase().trim(); render(); });
+
+  function match(t) {
+    if (state.cat !== 'All' && t.category !== state.cat) return false;
+    if (state.rec && !t.recommended) return false;
+    if (state.noadmin && t.requiresAdmin) return false;
+    if (state.lowrisk && t.risk !== 'low') return false;
+    if (state.q) {
+      const hay = (t.name + ' ' + t.description + ' ' + t.id + ' ' + t.category + ' ' + t.apply.join(' ')).toLowerCase();
+      if (!hay.includes(state.q)) return false;
+    }
+    return true;
+  }
+
+  function cmdBlock(label, cls, cmds) {
+    if (!cmds || !cmds.length) {
+      return `<div class="cmdblock"><div class="cmdhead"><span class="cmdlabel ${cls}">${label}</span></div><p class="norevert">One-time action — nothing to undo.</p></div>`;
+    }
+    const text = cmds.join('\n');
+    return `<div class="cmdblock">
+      <div class="cmdhead"><span class="cmdlabel ${cls}">${label}</span>
+        <button class="copy" data-cmd="${esc(text).replace(/"/g,'&quot;')}">Copy</button></div>
+      <pre><code>${esc(text)}</code></pre></div>`;
+  }
+
+  function card(t) {
+    const flags = [];
+    if (t.requiresAdmin) flags.push('admin');
+    if (t.needsRestart) flags.push('reboot');
+    flags.push(t.reversible ? 'reversible' : 'one-time');
+    return `<article class="card ${t.recommended ? 'rec' : ''}">
+      <div class="meta">
+        <span class="badge cat">${t.category}</span>
+        <span class="badge risk-${t.risk}">${t.risk} risk</span>
+        <span class="badge">impact ${t.impact}</span>
+        ${t.recommended ? '<span class="badge rec">recommended</span>' : ''}
+      </div>
+      <h3>${esc(t.name)}</h3>
+      <p class="desc">${esc(t.description)}</p>
+      <div class="meta">${flags.map(f => `<span class="badge flag">${f}</span>`).join('')}</div>
+      ${cmdBlock('Apply', 'apply', t.apply)}
+      ${cmdBlock('Revert', 'revert', t.revert)}
+    </article>`;
+  }
+
+  function render() {
+    const list = tweaks.filter(match);
+    const grid = document.getElementById('grid');
+    grid.innerHTML = list.map(card).join('');
+    document.getElementById('empty').hidden = list.length > 0;
+    document.getElementById('count').textContent =
+      `${list.length} of ${tweaks.length} tweak${tweaks.length === 1 ? '' : 's'} shown`;
+    grid.querySelectorAll('.copy').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const text = btn.getAttribute('data-cmd');
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const r = document.createRange(); const pre = btn.closest('.cmdblock').querySelector('pre');
+          r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        }
+        btn.textContent = 'Copied'; btn.classList.add('done');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1400);
+      });
+    });
+  }
+
+  render();
+</script>
