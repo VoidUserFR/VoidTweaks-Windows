@@ -1,10 +1,14 @@
 # VoidTweaks
 
-**An open, transparent, fully-reversible Windows 11 optimizer.**
+**An open, transparent, simple to use, fully-reversible Windows 11 optimizer.**
 
 VoidTweaks is a free Windows tweaking and cleanup tool. Every change is shown in
 plain language, nothing is hidden, nothing phones home, and almost everything can
 be reverted with one click. No paywall, no telemetry, no accounts.
+
+**🔥 I made VoidTweaks with the intention of making use of various functions from 
+your usual Windows Tweaks app, and make it ALL FREE AND OPEN-SOURCE.
+This is because I hate (and I'm sure you do too) paying for stuff**
 
 > ⚠️ **Use at your own risk.** These are real system changes. Keep "Restore point
 > first" ticked (on by default) and only apply what you understand. The authors
