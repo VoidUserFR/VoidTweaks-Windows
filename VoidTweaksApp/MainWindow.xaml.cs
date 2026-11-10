@@ -282,7 +282,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Grid.SetColumn(tile, 0); grid.Children.Add(tile);
 
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        left.Children.Add(new TextBlock { Text = tw.Name, FontSize = 16.5, FontWeight = FontWeights.SemiBold });
+        left.Children.Add(new TextBlock { Text = Loc.T("tw." + tw.Id, tw.Name), FontSize = 16.5, FontWeight = FontWeights.SemiBold });
         left.Children.Add(new TextBlock { Text = tw.Description, Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
         var tags = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 9, 0, 0) };
         tags.Children.Add(Badge(tw.Risk + " risk", RiskColor(tw.Risk)));
