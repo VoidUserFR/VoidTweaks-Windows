@@ -37,6 +37,7 @@ Source: "VoidTweaksApp\bin\publish\VoidTweaks.exe"; DestDir: "{app}"; Flags: ign
 Source: "VoidTweaksApp\bin\publish\tweaks.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "VoidTweaksApp\bin\publish\presets.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "VoidTweaksApp\bin\publish\OpenTweaks.Actions.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "VoidTweaksApp\bin\publish\i18n.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\VoidTweaks"; Filename: "{app}\{#MyAppExe}"
