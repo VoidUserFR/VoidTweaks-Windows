@@ -16,6 +16,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private long _pi, _pk, _pu;
     private string _sel = "";
     private string _search = "";
+    private bool _navving;
     private List<string> _undo = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
@@ -174,6 +175,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Select(string name)
     {
+        if (!string.IsNullOrEmpty(_search)) { _navving = true; try { SearchBox.Text = ""; } catch { } _navving = false; _search = ""; }
         _sel = name;
         var accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
         foreach (var kv in _nav)
@@ -196,6 +198,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void Render()
     {
         _liveHook = null;
+        if (!string.IsNullOrWhiteSpace(_search)) { SetHeaderIcon("All"); ShowSearchResults(_search); return; }
         SetHeaderIcon(_sel);
         switch (_sel)
         {
@@ -232,7 +235,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         _ => new()
     };
 
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { _search = SearchBox.Text; if (_sel == "All" || _cat.Categories.Contains(_sel)) Render(); }
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) { if (_navving) return; _search = SearchBox.Text; Render(); }
 
     private static FrameworkElement NavIcon(string name)
     {
@@ -245,6 +248,128 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         }
         catch { vb.Child = new Ellipse { Width = 9, Height = 9, Fill = brush }; }
         return vb;
+    }
+
+    // ---------------- global search ----------------
+    private static readonly Dictionary<string, string> NavKeywords = new()
+    {
+        ["Home"] = "dashboard usage cpu ram overview",
+        ["Networking"] = "wifi wi-fi dns ping internet latency connection speed router",
+        ["Health"] = "health check system status scan",
+        ["Cleanup"] = "clean junk temp cache debloat bloat trash sweep recycle",
+        ["Security"] = "virus antivirus scan malware defender tron threat offline",
+        ["Overclock"] = "overclock oc benchmark fps xmp expo cpu gpu ram speed tuning",
+        ["Game profiles"] = "game gaming fps profile valorant warzone competitive",
+        ["Apps"] = "install apps winget software download programs browser",
+        ["Processes"] = "process task kill end useless memory hog",
+        ["Startup"] = "startup boot autostart login",
+        ["Presets"] = "preset profile configuration export import",
+        ["Needs attention"] = "issues problems attention fix broken",
+        ["Settings"] = "settings language theme accent colour color density discord appearance",
+        ["All"] = "all tweaks everything list",
+    };
+
+    private void ShowSearchResults(string query)
+    {
+        HeaderTitle.Text = Loc.S("Search");
+        TweakList.Items.Clear();
+        var q = Norm(query);
+
+        var dests = new List<string>();
+        foreach (var name in _nav.Keys)
+        {
+            var label = Loc.T("nav." + name, name);
+            var kw = NavKeywords.TryGetValue(name, out var k) ? k : "";
+            if (Fuzzy(q, label) || Fuzzy(q, name) || Fuzzy(q, kw)) dests.Add(name);
+        }
+        if (dests.Count > 0)
+        {
+            TweakList.Items.Add(SearchHeader(Loc.S("Sections & groups")));
+            foreach (var d in dests) TweakList.Items.Add(DestCard(d));
+        }
+
+        var hits = _cat.Tweaks.Where(t =>
+            Fuzzy(q, Loc.T("tw." + t.Id, t.Name)) || Fuzzy(q, t.Name) ||
+            Fuzzy(q, Loc.S(t.Description)) || Fuzzy(q, t.Description) ||
+            Norm(t.Id).Contains(q) || Fuzzy(q, t.Category)).Take(40).ToList();
+        if (hits.Count > 0)
+        {
+            TweakList.Items.Add(SearchHeader(Loc.S("Tweaks") + $" · {hits.Count}"));
+            foreach (var t in hits) TweakList.Items.Add(BuildCard(t));
+        }
+
+        int total = dests.Count + hits.Count;
+        HeaderSub.Text = total == 0 ? Loc.S("Nothing matched — try another word.") : $"{total} " + Loc.S("result(s)") + $"  ·  “{query}”";
+        if (total == 0) TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing here."), Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) });
+    }
+
+    private static TextBlock SearchHeader(string t) => new() { Text = t, FontSize = 11, FontWeight = FontWeights.Bold, Opacity = 0.5, Margin = new Thickness(2, 10, 0, 8) };
+
+    private Border DestCard(string name)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var hex = CatHex.TryGetValue(name, out var h) ? h : "#8B7CF0";
+        var cc = (Color)ColorConverter.ConvertFromString(hex);
+        var tile = new Border { Width = 40, Height = 40, CornerRadius = new CornerRadius(10), Background = new SolidColorBrush(Color.FromArgb(34, cc.R, cc.G, cc.B)), Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center, Child = IconFor(name, 20) };
+        Grid.SetColumn(tile, 0); grid.Children.Add(tile);
+        var mid = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        mid.Children.Add(new TextBlock { Text = Loc.T("nav." + name, name), FontSize = 15, FontWeight = FontWeights.SemiBold });
+        mid.Children.Add(new TextBlock { Text = Loc.S("Go to section"), Opacity = 0.5, FontSize = 11.5, Margin = new Thickness(0, 2, 0, 0) });
+        Grid.SetColumn(mid, 1); grid.Children.Add(mid);
+        var go = new Wpf.Ui.Controls.Button { Content = Loc.S("Open →"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, VerticalAlignment = VerticalAlignment.Center };
+        var n = name; go.Click += (_, _) => Select(n);
+        Grid.SetColumn(go, 2); grid.Children.Add(go);
+        var card = Card(grid);
+        card.Cursor = System.Windows.Input.Cursors.Hand;
+        card.MouseLeftButtonUp += (_, _) => Select(n);
+        return card;
+    }
+
+    private static string Norm(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        var d = s.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in d) if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark) sb.Append(c);
+        return sb.ToString().ToLowerInvariant().Trim();
+    }
+    private static int Lev(string a, string b)
+    {
+        int n = a.Length, m = b.Length;
+        if (n == 0) return m; if (m == 0) return n;
+        var prev = new int[m + 1]; var cur = new int[m + 1];
+        for (int j = 0; j <= m; j++) prev[j] = j;
+        for (int i = 1; i <= n; i++)
+        {
+            cur[0] = i;
+            for (int j = 1; j <= m; j++)
+            {
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                cur[j] = System.Math.Min(System.Math.Min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            (prev, cur) = (cur, prev);
+        }
+        return prev[m];
+    }
+    // qNorm must already be normalized (via Norm). Matches by contains, prefix, or typo (Levenshtein).
+    private static bool Fuzzy(string qNorm, string text)
+    {
+        if (string.IsNullOrEmpty(qNorm)) return true;
+        var t = Norm(text);
+        if (t.Length == 0) return false;
+        if (t.Contains(qNorm)) return true;
+        if (qNorm.Length >= 3)
+        {
+            foreach (var tok in t.Split(new[] { ' ', '-', '/', '.', ',', '(', ')', ':', '·', '&', '…', '\'' }, System.StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (tok.StartsWith(qNorm)) return true;
+                if (System.Math.Abs(tok.Length - qNorm.Length) <= 2 && Lev(qNorm, tok) <= (qNorm.Length >= 6 ? 2 : 1)) return true;
+            }
+        }
+        return false;
     }
 
     // ---------------- tweak list ----------------
