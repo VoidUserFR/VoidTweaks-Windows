@@ -254,7 +254,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         HeaderTitle.Text = title;
         HeaderSub.Text = $"{items.Count} tweak(s) · {applied} applied";
         TweakList.Items.Clear();
-        if (items.Count == 0) { TweakList.Items.Add(new TextBlock { Text = "Nothing here.", Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) }); return; }
+        if (items.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing here."), Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) }); return; }
         foreach (var tw in items) TweakList.Items.Add(BuildCard(tw));
     }
 
@@ -283,7 +283,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         left.Children.Add(new TextBlock { Text = Loc.T("tw." + tw.Id, tw.Name), FontSize = 16.5, FontWeight = FontWeights.SemiBold });
-        left.Children.Add(new TextBlock { Text = tw.Description, Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
+        left.Children.Add(new TextBlock { Text = Loc.S(tw.Description), Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
         var tags = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 9, 0, 0) };
         tags.Children.Add(Badge(tw.Risk + " risk", RiskColor(tw.Risk)));
         if (tw.RequiresAdmin) tags.Children.Add(Badge("ADMIN", C(0xE5, 0xAA, 0x3D)));
@@ -296,7 +296,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         if (toggleable)
         {
             var ts = new Wpf.Ui.Controls.ToggleSwitch { IsChecked = state == "applied", Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            if (tw.RequiresAdmin && !IsAdmin()) { ts.IsEnabled = false; ts.ToolTip = "Needs administrator"; }
+            if (tw.RequiresAdmin && !IsAdmin()) { ts.IsEnabled = false; ts.ToolTip = Loc.S("Needs administrator"); }
             bool init = true;
             ts.Checked += (_, _) => { if (init) return; if (_busy) { Log("Busy — wait for the current action to finish."); Render(); return; } RunMany(new[] { tw }, false, "apply: " + tw.Name); };
             ts.Unchecked += (_, _) => { if (init) return; if (_busy) { Log("Busy — wait for the current action to finish."); Render(); return; } RunMany(new[] { tw }, true, "revert: " + tw.Name); };
@@ -305,9 +305,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         }
         else
         {
-            var apply = new Wpf.Ui.Controls.Button { Content = "Apply", Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 92, Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            if (tw.RequiresAdmin && !IsAdmin()) { apply.IsEnabled = false; apply.ToolTip = "Needs administrator"; }
-            apply.Click += (_, _) => { apply.Content = "Running…"; apply.IsEnabled = false; RunMany(new[] { tw }, false, "run: " + tw.Name); };
+            var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 92, Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+            if (tw.RequiresAdmin && !IsAdmin()) { apply.IsEnabled = false; apply.ToolTip = Loc.S("Needs administrator"); }
+            apply.Click += (_, _) => { apply.Content = Loc.S("Running…"); apply.IsEnabled = false; RunMany(new[] { tw }, false, "run: " + tw.Name); };
             right.Children.Add(apply);
         }
         Grid.SetColumn(right, 2); grid.Children.Add(right);
@@ -348,8 +348,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- home ----------------
     private void ShowHome()
     {
-        HeaderTitle.Text = "Home";
-        HeaderSub.Text = "Live system usage and what's worth doing next";
+        HeaderTitle.Text = Loc.S("Home");
+        HeaderSub.Text = Loc.S("Live system usage and what's worth doing next");
         TweakList.Items.Clear();
 
         var row = new Grid { Margin = new Thickness(0, 0, 0, 2) };
@@ -370,8 +370,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var recs = BuildRecommendations();
         var panel = new StackPanel { Margin = new Thickness(0, 12, 0, 0) };
-        panel.Children.Add(new TextBlock { Text = "Recommendations", FontSize = 16.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 0, 0, 10) });
-        if (recs.Count == 0) panel.Children.Add(new TextBlock { Text = "All good — nothing urgent right now. Nice.", Opacity = 0.6, Margin = new Thickness(2, 0, 0, 0) });
+        panel.Children.Add(new TextBlock { Text = Loc.S("Recommendations"), FontSize = 16.5, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 0, 0, 10) });
+        if (recs.Count == 0) panel.Children.Add(new TextBlock { Text = Loc.S("All good — nothing urgent right now. Nice."), Opacity = 0.6, Margin = new Thickness(2, 0, 0, 0) });
         foreach (var r in recs) panel.Children.Add(RecCard(r));
         TweakList.Items.Add(panel);
     }
@@ -396,13 +396,13 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         var left = new StackPanel();
         var head = new StackPanel { Orientation = Orientation.Horizontal };
         head.Children.Add(new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(r.Col), Margin = new Thickness(0, 0, 9, 0), VerticalAlignment = VerticalAlignment.Center });
-        head.Children.Add(new TextBlock { Text = r.Title, FontSize = 14.5, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
+        head.Children.Add(new TextBlock { Text = Loc.S(r.Title), FontSize = 14.5, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
         left.Children.Add(head);
-        left.Children.Add(new TextBlock { Text = r.Detail, Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 6, 14, 0), FontSize = 12.5 });
+        left.Children.Add(new TextBlock { Text = Loc.S(r.Detail), Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 6, 14, 0), FontSize = 12.5 });
         Grid.SetColumn(left, 0); grid.Children.Add(left);
         if (!string.IsNullOrEmpty(r.Go))
         {
-            var b = new Wpf.Ui.Controls.Button { Content = "Open →", Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, VerticalAlignment = VerticalAlignment.Center };
+            var b = new Wpf.Ui.Controls.Button { Content = Loc.S("Open →"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, VerticalAlignment = VerticalAlignment.Center };
             var go = r.Go; b.Click += (_, _) => Select(go);
             Grid.SetColumn(b, 1); grid.Children.Add(b);
         }
@@ -412,7 +412,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         var sp = new StackPanel();
         sp.Children.Add(new TextBlock { Text = label, FontSize = 11, FontWeight = FontWeights.SemiBold, Opacity = 0.55 });
-        val = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 3, 0, 9) };
+        val = new TextBlock { Text = Loc.S("—"), FontSize = 30, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 3, 0, 9) };
         sp.Children.Add(val);
         bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 10, Value = 0 };
         sp.Children.Add(bar);
@@ -430,19 +430,19 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- networking ----------------
     private void ShowNetwork()
     {
-        HeaderTitle.Text = "Networking";
-        HeaderSub.Text = "Test your connection, benchmark DNS, then apply the right tweaks";
+        HeaderTitle.Text = Loc.S("Networking");
+        HeaderSub.Text = Loc.S("Test your connection, benchmark DNS, then apply the right tweaks");
         TweakList.Items.Clear();
 
         var info = Section("Your connection", "Live adapter and Wi‑Fi link details.");
-        var infoTxt = new TextBlock { Text = "Reading…", Opacity = 0.72, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var infoTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.72, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         info.Children.Add(infoTxt);
         TweakList.Items.Add(Card(info));
         RunAsync(Engine.NetInfo, infoTxt);
 
         var test = Section("Connection test", "Ping + download speed (Cloudflare) and a DNS resolver benchmark. Read‑only — changes nothing.");
         var btns = new StackPanel { Orientation = Orientation.Horizontal };
-        var resTxt = new TextBlock { Text = "", Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var resTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         var b1 = Btn("Run speed + ping", () => RunAsync(Engine.NetTest, resTxt)); b1.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; b1.Margin = new Thickness(0, 0, 8, 0);
         var b2 = Btn("DNS benchmark", () => RunAsync(Engine.DnsBench, resTxt));
         btns.Children.Add(b1); btns.Children.Add(b2);
@@ -460,7 +460,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             regrow.Children.Add(rb);
         }
         rec.Children.Add(regrow);
-        foreach (var s in tips) rec.Children.Add(new TextBlock { Text = s, Opacity = 0.72, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 8) });
+        foreach (var s in tips) rec.Children.Add(new TextBlock { Text = Loc.S(s), Opacity = 0.72, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 8) });
         var go = Btn("Open Network tweaks →", () => Select("Network")); go.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
         rec.Children.Add(go);
         TweakList.Items.Add(Card(rec));
@@ -493,7 +493,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void RunAsync(System.Func<string> work, TextBlock target)
     {
-        target.Text = "Running…";
+        target.Text = Loc.S("Running…");
         System.Threading.Tasks.Task.Run(() =>
         {
             string r; try { r = work(); } catch (System.Exception ex) { r = "Error: " + ex.Message; }
@@ -504,7 +504,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- presets ----------------
     private void ShowPresets()
     {
-        HeaderTitle.Text = "Presets";
+        HeaderTitle.Text = Loc.S("Presets");
         int appliedN = _cat.Tweaks.Count(t => Engine.State(t) == "applied");
         HeaderSub.Text = $"You currently have {appliedN} tweak(s) applied.";
         TweakList.Items.Clear();
@@ -523,7 +523,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         foreach (var p in Engine.LoadPresets()) TweakList.Items.Add(PresetCard(p, false));
         if (user.Count > 0)
         {
-            TweakList.Items.Add(new TextBlock { Text = "YOUR PRESETS", FontSize = 10, FontWeight = FontWeights.Bold, Opacity = 0.4, Margin = new Thickness(2, 10, 0, 6) });
+            TweakList.Items.Add(new TextBlock { Text = Loc.S("YOUR PRESETS"), FontSize = 10, FontWeight = FontWeights.Bold, Opacity = 0.4, Margin = new Thickness(2, 10, 0, 6) });
             foreach (var p in user) TweakList.Items.Add(PresetCard(p, true));
         }
     }
@@ -533,9 +533,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         var pp = p;
         var grid = TwoCol();
         var left = new StackPanel();
-        left.Children.Add(new TextBlock { Text = p.Name, FontSize = 15, FontWeight = FontWeights.SemiBold });
+        left.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 15, FontWeight = FontWeights.SemiBold });
         if (!string.IsNullOrWhiteSpace(p.Description))
-            left.Children.Add(new TextBlock { Text = p.Description, Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
+            left.Children.Add(new TextBlock { Text = Loc.S(p.Description), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
         if (p.Mode != "revert-all" && p.Apply.Count > 0)
         {
             int ap = p.Apply.Count(id => _cat.Tweaks.FirstOrDefault(t => t.Id == id) is { } t && Engine.State(t) == "applied");
@@ -544,15 +544,15 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Grid.SetColumn(left, 0); grid.Children.Add(left);
 
         var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        var apply = new Wpf.Ui.Controls.Button { Content = "Apply", Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 92, HorizontalAlignment = HorizontalAlignment.Right };
+        var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 92, HorizontalAlignment = HorizontalAlignment.Right };
         apply.Click += (_, _) => ApplyPreset(pp);
         right.Children.Add(apply);
         if (editable)
         {
             var erow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            var ren = new Wpf.Ui.Controls.Button { Content = "Rename", Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0) };
+            var ren = new Wpf.Ui.Controls.Button { Content = Loc.S("Rename"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0) };
             ren.Click += (_, _) => RenamePreset(pp);
-            var del = new Wpf.Ui.Controls.Button { Content = "Delete", Appearance = Wpf.Ui.Controls.ControlAppearance.Danger };
+            var del = new Wpf.Ui.Controls.Button { Content = Loc.S("Delete"), Appearance = Wpf.Ui.Controls.ControlAppearance.Danger };
             del.Click += (_, _) => DeletePreset(pp);
             erow.Children.Add(ren); erow.Children.Add(del);
             right.Children.Add(erow);
@@ -613,8 +613,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         var tb = new System.Windows.Controls.TextBox { Text = def, Margin = new Thickness(0, 0, 0, 14), FontSize = 13, Padding = new Thickness(6, 4, 6, 4) };
         tb.SelectAll();
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var ok = new System.Windows.Controls.Button { Content = "OK", Width = 76, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
-        var cancel = new System.Windows.Controls.Button { Content = "Cancel", Width = 76, IsCancel = true };
+        var ok = new System.Windows.Controls.Button { Content = Loc.S("OK"), Width = 76, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new System.Windows.Controls.Button { Content = Loc.S("Cancel"), Width = 76, IsCancel = true };
         row.Children.Add(ok); row.Children.Add(cancel);
         sp.Children.Add(tb); sp.Children.Add(row);
         win.Content = sp;
@@ -634,7 +634,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void ShowStartup()
     {
         var items = Engine.StartupItems();
-        HeaderTitle.Text = "Startup apps";
+        HeaderTitle.Text = Loc.S("Startup apps");
         HeaderSub.Text = $"{items.Count} item(s), {items.Count(i => i.Enabled)} enabled — disabling is reversible";
         TweakList.Items.Clear();
         foreach (var it in items)
@@ -652,7 +652,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right };
             right.Children.Add(PillBox(it.Enabled ? "Enabled" : "Disabled", it.Enabled ? C(0x4C, 0xC3, 0x8A) : C(0x9A, 0x9A, 0xA6)));
             var btn = new Wpf.Ui.Controls.Button { Content = it.Enabled ? "Disable" : "Enable", Appearance = it.Enabled ? Wpf.Ui.Controls.ControlAppearance.Secondary : Wpf.Ui.Controls.ControlAppearance.Success, Width = 90, Margin = new Thickness(0, 11, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            if (it.Admin && !IsAdmin()) { btn.IsEnabled = false; btn.ToolTip = "Needs administrator"; }
+            if (it.Admin && !IsAdmin()) { btn.IsEnabled = false; btn.ToolTip = Loc.S("Needs administrator"); }
             btn.Click += (_, _) => { if (rec.Enabled) Engine.DisableStartup(rec); else Engine.EnableStartup(rec); Log($"Startup: {(rec.Enabled ? "disabled" : "enabled")} '{rec.Name}'."); ShowStartup(); };
             right.Children.Add(btn);
             Grid.SetColumn(right, 1); grid.Children.Add(right);
@@ -663,11 +663,11 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- health ----------------
     private void ShowHealth()
     {
-        HeaderTitle.Text = "Health check";
-        HeaderSub.Text = "Your system, and what's worth looking at";
+        HeaderTitle.Text = Loc.S("Health check");
+        HeaderSub.Text = Loc.S("Your system, and what's worth looking at");
         TweakList.Items.Clear();
         var specs = new StackPanel();
-        specs.Children.Add(new TextBlock { Text = "Your system", FontSize = 15, FontWeight = FontWeights.SemiBold });
+        specs.Children.Add(new TextBlock { Text = Loc.S("Your system"), FontSize = 15, FontWeight = FontWeights.SemiBold });
         var cpu = Engine.RunOne("(Get-CimInstance Win32_Processor | Select-Object -First 1).Name");
         var media = Engine.RunOne("(Get-Partition -DriveLetter ($env:SystemDrive[0]) | Get-Disk | Get-PhysicalDisk).MediaType");
         specs.Children.Add(new TextBlock { Text = $"{cpu}\n{GpuText.Text}  ·  {OsText.Text}\nSystem drive: {media}\n{DiskText.Text}", Opacity = 0.7, Margin = new Thickness(0, 7, 0, 0), FontSize = 12.5 });
@@ -701,21 +701,21 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private static StackPanel Section(string title, string desc)
     {
         var sp = new StackPanel();
-        sp.Children.Add(new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold });
-        sp.Children.Add(new TextBlock { Text = desc, Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 10), FontSize = 12.5 });
+        sp.Children.Add(new TextBlock { Text = Loc.S(title), FontSize = 15, FontWeight = FontWeights.SemiBold });
+        sp.Children.Add(new TextBlock { Text = Loc.S(desc), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 10), FontSize = 12.5 });
         return sp;
     }
     private static Wpf.Ui.Controls.Button Btn(string text, System.Action onClick)
     {
-        var b = new Wpf.Ui.Controls.Button { Content = text };
+        var b = new Wpf.Ui.Controls.Button { Content = Loc.S(text) };
         b.Click += (_, _) => onClick();
         return b;
     }
 
     private void ShowSettings()
     {
-        HeaderTitle.Text = "Settings";
-        HeaderSub.Text = "Appearance — make it yours";
+        HeaderTitle.Text = Loc.S("Settings");
+        HeaderSub.Text = Loc.S("Appearance — make it yours");
         TweakList.Items.Clear();
 
         var lang = Section(Loc.T("set.language", "Language"), Loc.T("set.languageDesc", "Choose the app language."));
@@ -771,7 +771,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         TweakList.Items.Add(Card(m));
 
         var dc = Section("Discord Rich Presence", "Show “Playing VoidTweaks” on your Discord profile. Make a free app at discord.com/developers → New Application, copy its Application ID here, then Enable. (For the logo, upload an art asset named 'voidtweaks' in that app.)");
-        var dtb = new Wpf.Ui.Controls.TextBox { PlaceholderText = "Discord Application (Client) ID", Text = Engine.GetDiscordId(), Margin = new Thickness(0, 0, 0, 10) };
+        var dtb = new Wpf.Ui.Controls.TextBox { PlaceholderText = Loc.S("Discord Application (Client) ID"), Text = Engine.GetDiscordId(), Margin = new Thickness(0, 0, 0, 10) };
         var dcrow = new StackPanel { Orientation = Orientation.Horizontal };
         var den = Btn("Enable", () => { var id = (dtb.Text ?? "").Trim(); if (id.Length < 10 || !id.All(char.IsDigit)) { Log("Enter a valid numeric Discord Application ID first."); return; } Engine.SetDiscordId(id); Log("Discord: connecting…"); System.Threading.Tasks.Task.Run(() => StartRpc(id)); }); den.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; den.Margin = new Thickness(0, 0, 8, 0);
         var ddis = Btn("Disable", () => { Engine.SetDiscordId(""); StopRpc(); Log("Discord Rich Presence: off."); });
@@ -786,8 +786,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- apps (winget) ----------------
     private void ShowApps()
     {
-        HeaderTitle.Text = "Install apps";
-        HeaderSub.Text = "Popular apps via winget, grouped by type — one click each. (The window pauses while an install runs.)";
+        HeaderTitle.Text = Loc.S("Install apps");
+        HeaderSub.Text = Loc.S("Popular apps via winget, grouped by type — one click each. (The window pauses while an install runs.)");
         TweakList.Items.Clear();
         var top = Section("Update everything", "Upgrade all installed apps via winget.");
         var ua = Btn("Update all", () => { Log("=== winget upgrade --all ==="); Log(Engine.UpdateAllApps()); }); ua.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
@@ -812,8 +812,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             left.Children.Add(new TextBlock { Text = a.Name, FontSize = 15, FontWeight = FontWeights.SemiBold });
             left.Children.Add(new TextBlock { Text = a.Id, Opacity = 0.4, FontSize = 10.5, Margin = new Thickness(0, 6, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") });
             Grid.SetColumn(left, 0); grid.Children.Add(left);
-            var btn = new Wpf.Ui.Controls.Button { Content = "Install", Appearance = Wpf.Ui.Controls.ControlAppearance.Success, Width = 92, VerticalAlignment = VerticalAlignment.Center };
-            btn.Click += (_, _) => { btn.Content = "Installing…"; btn.IsEnabled = false; Log($"=== install {a.Name} ==="); Log(Engine.InstallApp(a.Id)); btn.Content = "Install"; btn.IsEnabled = true; };
+            var btn = new Wpf.Ui.Controls.Button { Content = Loc.S("Install"), Appearance = Wpf.Ui.Controls.ControlAppearance.Success, Width = 92, VerticalAlignment = VerticalAlignment.Center };
+            btn.Click += (_, _) => { btn.Content = Loc.S("Installing…"); btn.IsEnabled = false; Log($"=== install {a.Name} ==="); Log(Engine.InstallApp(a.Id)); btn.Content = Loc.S("Install"); btn.IsEnabled = true; };
             Grid.SetColumn(btn, 1); grid.Children.Add(btn);
             TweakList.Items.Add(Card(grid));
         }
@@ -822,8 +822,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- overclocking ----------------
     private void ShowOverclock()
     {
-        HeaderTitle.Text = "Overclock";
-        HeaderSub.Text = "Benchmark your PC and get safe, spec‑aware tuning advice";
+        HeaderTitle.Text = Loc.S("Overclock");
+        HeaderSub.Text = Loc.S("Benchmark your PC and get safe, spec‑aware tuning advice");
         TweakList.Items.Clear();
 
         var warn = new Border
@@ -831,17 +831,17 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             Background = new SolidColorBrush(Color.FromArgb(40, 0xEF, 0x6A, 0x60)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(120, 0xEF, 0x6A, 0x60)),
             BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(0, 0, 0, 12),
-            Child = new TextBlock { Text = "⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.", Foreground = new SolidColorBrush(C(0xF2, 0xB0, 0xAA)), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 }
+            Child = new TextBlock { Text = Loc.S("⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points."), Foreground = new SolidColorBrush(C(0xF2, 0xB0, 0xAA)), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 }
         };
         TweakList.Items.Add(warn);
 
         var sp = Section("Your hardware", "Detected specs — the advice below adapts to these.");
-        var specTxt = new TextBlock { Text = "Reading…", Opacity = 0.78, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var specTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.78, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         sp.Children.Add(specTxt);
         TweakList.Items.Add(Card(sp));
 
         var bench = Section("Benchmark", "Read‑only: times CPU math, a RAM copy and a disk write/read. Run it before and after tuning to compare.");
-        var benchTxt = new TextBlock { Text = "", Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var benchTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         var rb = Btn("Run benchmark", () => RunAsync(Engine.Benchmark, benchTxt)); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
         bench.Children.Add(rb); bench.Children.Add(benchTxt);
         TweakList.Items.Add(Card(bench));
@@ -869,7 +869,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                     "4.  Temps: watch with HWiNFO. Keep CPU under ~90 °C and GPU under ~85 °C under load — if you're hotter, improve airflow before pushing clocks."
                 };
                 var adv = Section("Recommended tuning", "Do these in BIOS / GPU tools, not here. Ordered by effort vs reward.");
-                foreach (var t in tips) adv.Children.Add(new TextBlock { Text = t, Opacity = 0.74, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 9) });
+                foreach (var t in tips) adv.Children.Add(new TextBlock { Text = Loc.S(t), Opacity = 0.74, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 9) });
                 var tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
                 var ab = Btn("Install MSI Afterburner", () => InstallTool("Guru3D.Afterburner", "MSI Afterburner")); ab.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary; ab.Margin = new Thickness(0, 0, 8, 0);
                 var hw = Btn("Install HWiNFO", () => InstallTool("REALiX.HWiNFO", "HWiNFO")); hw.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
@@ -910,8 +910,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShowGameProfiles()
     {
-        HeaderTitle.Text = "Game profiles";
-        HeaderSub.Text = "One click applies a curated, reversible tweak set for a game type. Changes Windows settings only — not in‑game options.";
+        HeaderTitle.Text = Loc.S("Game profiles");
+        HeaderSub.Text = Loc.S("One click applies a curated, reversible tweak set for a game type. Changes Windows settings only — not in‑game options.");
         TweakList.Items.Clear();
         foreach (var gp in GameProfiles)
         {
@@ -930,16 +930,16 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             Grid.SetColumn(tile, 0); grid.Children.Add(tile);
 
             var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            left.Children.Add(new TextBlock { Text = p.Name, FontSize = 16.5, FontWeight = FontWeights.SemiBold });
-            left.Children.Add(new TextBlock { Text = p.Blurb, Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
+            left.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 16.5, FontWeight = FontWeights.SemiBold });
+            left.Children.Add(new TextBlock { Text = Loc.S(p.Blurb), Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
             left.Children.Add(new TextBlock { Text = full ? $"● Active — all {total} applied" : $"{have} / {total} applied", Foreground = new SolidColorBrush(full ? C(0x4C, 0xC3, 0x8A) : C(0x9A, 0x9A, 0xA6)), FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 9, 0, 0) });
             Grid.SetColumn(left, 1); grid.Children.Add(left);
 
             var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
-            var apply = new Wpf.Ui.Controls.Button { Content = "Apply", Appearance = Wpf.Ui.Controls.ControlAppearance.Success, Width = 94 };
-            if (!IsAdmin()) { apply.ToolTip = "Some tweaks need administrator"; }
+            var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Success, Width = 94 };
+            if (!IsAdmin()) { apply.ToolTip = Loc.S("Some tweaks need administrator"); }
             apply.Click += (_, _) => ApplyProfile(p, false);
-            var rev = new Wpf.Ui.Controls.Button { Content = "Revert", Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 94, Margin = new Thickness(0, 8, 0, 0) };
+            var rev = new Wpf.Ui.Controls.Button { Content = Loc.S("Revert"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 94, Margin = new Thickness(0, 8, 0, 0) };
             rev.Click += (_, _) => ApplyProfile(p, true);
             right.Children.Add(apply); right.Children.Add(rev);
             Grid.SetColumn(right, 2); grid.Children.Add(right);
@@ -953,7 +953,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         var list = Engine.Processes();
         int useless = list.Count(p => p.Type == "useless");
-        HeaderTitle.Text = "Processes";
+        HeaderTitle.Text = Loc.S("Processes");
         HeaderSub.Text = $"{list.Count} shown · {useless} useless flagged · system ones are locked";
         TweakList.Items.Clear();
         foreach (var p in list) TweakList.Items.Add(BuildProcCard(p));
@@ -981,7 +981,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         right.Children.Add(PillBox(ptxt, pc));
         if (p.Type != "system")
         {
-            var end = new Wpf.Ui.Controls.Button { Content = "End task", Appearance = p.Type == "useless" ? Wpf.Ui.Controls.ControlAppearance.Danger : Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 92, Margin = new Thickness(0, 11, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+            var end = new Wpf.Ui.Controls.Button { Content = Loc.S("End task"), Appearance = p.Type == "useless" ? Wpf.Ui.Controls.ControlAppearance.Danger : Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 92, Margin = new Thickness(0, 11, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
             var name = p.Name;
             end.Click += (_, _) => { Engine.EndProcess(name); Log($"Ended '{name}'."); ShowProcesses(); };
             right.Children.Add(end);
@@ -993,8 +993,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- cleanup (lazy mode) ----------------
     private void ShowCleanup()
     {
-        HeaderTitle.Text = "Cleanup";
-        HeaderSub.Text = "Lazy mode — clear junk, caches and bloat in one click. No going tweak-by-tweak.";
+        HeaderTitle.Text = Loc.S("Cleanup");
+        HeaderSub.Text = Loc.S("Lazy mode — clear junk, caches and bloat in one click. No going tweak-by-tweak.");
         TweakList.Items.Clear();
 
         var full = Section("Full clean  (recommended)", "Clears temp files, Windows cache, thumbnails, Store cache, empties the Recycle Bin, flushes DNS, trims your SSD and frees RAM — all the throwaway stuff, nothing personal.");
@@ -1026,30 +1026,30 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // ---------------- security (deep scan) ----------------
     private void ShowSecurity()
     {
-        HeaderTitle.Text = "Security";
-        HeaderSub.Text = "Deep virus scanning with Windows' built-in engine, plus the heavier tools for when something nasty won't budge.";
+        HeaderTitle.Text = Loc.S("Security");
+        HeaderSub.Text = Loc.S("Deep virus scanning with Windows' built-in engine, plus the heavier tools for when something nasty won't budge.");
         TweakList.Items.Clear();
 
         var upd = Section("1. Update protection first", "Grab the newest virus definitions before scanning.");
-        var updTxt = new TextBlock { Text = "", Opacity = 0.8, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
+        var updTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.8, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
         var ub = Btn("Update definitions", () => RunAsync(Engine.DefenderUpdate, updTxt)); ub.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
         upd.Children.Add(ub); upd.Children.Add(updTxt);
         TweakList.Items.Add(Card(upd));
 
         var scan = Section("2. Scan this PC", "Quick checks the usual hiding spots. Full deep-scans every file — slow (30–60 min) but thorough. Both run in the background so the app stays usable.");
-        var scanTxt = new TextBlock { Text = "", Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var scanTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         var srow = new WrapPanel();
-        var sq = Btn("Quick scan", () => { Log("Defender quick scan started…"); scanTxt.Text = "Quick scan running…"; RunAsync(() => Engine.DefenderScan("Quick"), scanTxt); }); sq.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; sq.Margin = new Thickness(0, 0, 8, 0);
-        var sf = Btn("Full deep scan", () => { Log("Defender FULL scan started — this can take a while (background)…"); scanTxt.Text = "Full scan running in the background… you'll see the result here when it finishes."; RunAsync(() => Engine.DefenderScan("Full"), scanTxt); });
+        var sq = Btn("Quick scan", () => { Log("Defender quick scan started…"); scanTxt.Text = Loc.S("Quick scan running…"); RunAsync(() => Engine.DefenderScan("Quick"), scanTxt); }); sq.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; sq.Margin = new Thickness(0, 0, 8, 0);
+        var sf = Btn("Full deep scan", () => { Log("Defender FULL scan started — this can take a while (background)…"); scanTxt.Text = Loc.S("Full scan running in the background… you'll see the result here when it finishes."); RunAsync(() => Engine.DefenderScan("Full"), scanTxt); });
         srow.Children.Add(sq); srow.Children.Add(sf);
         scan.Children.Add(srow); scan.Children.Add(scanTxt);
         TweakList.Items.Add(Card(scan));
 
         var off = Section("3. Offline scan  (the nuclear option)", "Reboots your PC and scans BEFORE Windows loads — catches rootkits and deep infections a normal scan can't. Save your work first!");
-        var offTxt = new TextBlock { Text = "", Opacity = 0.8, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
+        var offTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.8, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) };
         var ob = Btn("Run offline scan (reboots!)", () =>
         {
-            if (System.Windows.MessageBox.Show(this, "This reboots your PC now and scans before Windows starts. Save everything first. Continue?", "VoidTweaks — Offline scan", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes)
+            if (System.Windows.MessageBox.Show(this, Loc.S("This reboots your PC now and scans before Windows starts. Save everything first. Continue?"), Loc.S("VoidTweaks — Offline scan"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes)
             { Log("Scheduling Defender offline scan…"); RunAsync(Engine.DefenderOffline, offTxt); }
         }); ob.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
         off.Children.Add(ob); off.Children.Add(offTxt);
@@ -1099,7 +1099,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Padding = new Thickness(7, 2, 7, 2),
         Margin = new Thickness(0, 0, 6, 0),
         VerticalAlignment = VerticalAlignment.Center,
-        Child = new TextBlock { Text = text, Foreground = new SolidColorBrush(c), FontSize = 10, FontWeight = FontWeights.SemiBold }
+        Child = new TextBlock { Text = Loc.S(text), Foreground = new SolidColorBrush(c), FontSize = 10, FontWeight = FontWeights.SemiBold }
     };
     private static Border PillBox(string txt, Color c) => new()
     {
@@ -1107,7 +1107,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         CornerRadius = new CornerRadius(11),
         Padding = new Thickness(11, 4, 11, 4),
         HorizontalAlignment = HorizontalAlignment.Right,
-        Child = new TextBlock { Text = txt, Foreground = new SolidColorBrush(c), FontSize = 11, FontWeight = FontWeights.SemiBold }
+        Child = new TextBlock { Text = Loc.S(txt), Foreground = new SolidColorBrush(c), FontSize = 11, FontWeight = FontWeights.SemiBold }
     };
     private static Border Pill(string state)
     {
@@ -1182,7 +1182,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 Log(r);
                 SetBusy(false);
                 UpdateLive();
-                if (!admin && System.Windows.MessageBox.Show(this, "Also purge the standby memory list? That frees the most RAM (RAMMap-style) but needs a one-time admin prompt.", "VoidTweaks — Boost", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes)
+                if (!admin && System.Windows.MessageBox.Show(this, Loc.S("Also purge the standby memory list? That frees the most RAM (RAMMap-style) but needs a one-time admin prompt."), Loc.S("VoidTweaks — Boost"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes)
                 {
                     Log("Requesting elevation to purge standby list…");
                     SetBusy(true);
@@ -1230,7 +1230,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         try { OsText.Text = $"build {System.Environment.OSVersion.Version.Build}"; } catch { }
         try { var d = new DriveInfo(System.IO.Path.GetPathRoot(System.Environment.SystemDirectory)!); DiskText.Text = $"{d.AvailableFreeSpace / 1073741824.0:N0} GB free of {d.TotalSize / 1073741824.0:N0}"; } catch { }
-        try { var g = Engine.RunOne("(Get-CimInstance Win32_VideoController | Where-Object { $_.Name -and \"$($_.Status)\" -eq 'OK' -and $_.Name -notmatch 'Meta|Virtual|Basic|Remote' } | Select-Object -First 1).Name"); GpuText.Text = string.IsNullOrWhiteSpace(g) ? "—" : g; } catch { GpuText.Text = "—"; }
+        try { var g = Engine.RunOne("(Get-CimInstance Win32_VideoController | Where-Object { $_.Name -and \"$($_.Status)\" -eq 'OK' -and $_.Name -notmatch 'Meta|Virtual|Basic|Remote' } | Select-Object -First 1).Name"); GpuText.Text = string.IsNullOrWhiteSpace(g) ? "—" : g; } catch { GpuText.Text = Loc.S("—"); }
     }
     private void UpdateLive()
     {

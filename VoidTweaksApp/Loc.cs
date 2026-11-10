@@ -43,4 +43,11 @@ public static class Loc
         if (_data.TryGetValue("en", out var e) && e.TryGetValue(key, out var ev) && !string.IsNullOrEmpty(ev)) return ev;
         return string.IsNullOrEmpty(fallback) ? key : fallback;
     }
+
+    // Translate any English UI string by its text (key = "s." + english). Falls back to the English.
+    public static string S(string en)
+    {
+        if (string.IsNullOrEmpty(en) || _lang == "en") return en;
+        return T("s." + en, en);
+    }
 }
