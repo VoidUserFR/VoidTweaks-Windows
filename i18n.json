@@ -533,7 +533,12 @@
     "s.Your system": "O seu sistema",
     "s.Your system, and what's worth looking at": "O seu sistema, e o que vale a pena ver",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  O VoidTweaks nunca muda clocks ou voltagens por si. O overclock faz-se no BIOS/UEFI e em ferramentas de GPU, por sua conta e risco — este separador só faz benchmark e recomenda pontos de partida seguros.",
-    "s.✨  Clean everything now": "✨  Limpar tudo agora"
+    "s.✨  Clean everything now": "✨  Limpar tudo agora",
+    "s.Search": "Pesquisar",
+    "s.Sections & groups": "Secções e grupos",
+    "s.Go to section": "Ir para a secção",
+    "s.result(s)": "resultado(s)",
+    "s.Nothing matched — try another word.": "Nada corresponde — tente outra palavra."
   },
   "ru": {
     "nav.Home": "Главная",
@@ -924,7 +929,12 @@
     "s.Your system": "Ваша система",
     "s.Your system, and what's worth looking at": "Ваша система и на что стоит взглянуть",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks никогда не меняет частоты или напряжения за вас. Разгон делается в BIOS/UEFI и в инструментах GPU, на свой риск — эта вкладка только тестирует и советует безопасные отправные точки.",
-    "s.✨  Clean everything now": "✨  Очистить всё сейчас"
+    "s.✨  Clean everything now": "✨  Очистить всё сейчас",
+    "s.Search": "Поиск",
+    "s.Sections & groups": "Разделы и группы",
+    "s.Go to section": "Перейти к разделу",
+    "s.result(s)": "результат(ов)",
+    "s.Nothing matched — try another word.": "Ничего не найдено — попробуйте другое слово."
   },
   "fr": {
     "nav.Home": "Accueil",
@@ -1310,7 +1320,12 @@
     "s.Your system": "Votre système",
     "s.Your system, and what's worth looking at": "Votre système, et ce qui mérite un coup d'œil",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks ne modifie jamais les fréquences ou tensions à votre place. L'overclock se fait dans le BIOS/UEFI et les outils GPU, à vos risques — cet onglet ne fait que du benchmark et recommande des points de départ sûrs.",
-    "s.✨  Clean everything now": "✨  Tout nettoyer maintenant"
+    "s.✨  Clean everything now": "✨  Tout nettoyer maintenant",
+    "s.Search": "Rechercher",
+    "s.Sections & groups": "Sections et groupes",
+    "s.Go to section": "Aller à la section",
+    "s.result(s)": "résultat(s)",
+    "s.Nothing matched — try another word.": "Aucun résultat — essayez un autre mot."
   },
   "de": {
     "nav.Home": "Start",
@@ -1697,7 +1712,12 @@
     "s.Your system": "Ihr System",
     "s.Your system, and what's worth looking at": "Ihr System und was einen Blick wert ist",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks ändert niemals Taktraten oder Spannungen für Sie. Übertakten erfolgt im BIOS/UEFI und in GPU-Tools, auf eigenes Risiko — dieser Tab benchmarkt nur und empfiehlt sichere Startpunkte.",
-    "s.✨  Clean everything now": "✨  Jetzt alles bereinigen"
+    "s.✨  Clean everything now": "✨  Jetzt alles bereinigen",
+    "s.Search": "Suche",
+    "s.Sections & groups": "Bereiche & Gruppen",
+    "s.Go to section": "Zum Bereich",
+    "s.result(s)": "Ergebnis(se)",
+    "s.Nothing matched — try another word.": "Nichts gefunden — anderes Wort versuchen."
   },
   "es": {
     "nav.Home": "Inicio",
@@ -2084,7 +2104,12 @@
     "s.Your system": "Tu sistema",
     "s.Your system, and what's worth looking at": "Tu sistema, y lo que vale la pena mirar",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks nunca cambia frecuencias ni voltajes por ti. El overclock se hace en la BIOS/UEFI y en herramientas de GPU, bajo tu propio riesgo — esta pestaña solo hace benchmark y recomienda puntos de partida seguros.",
-    "s.✨  Clean everything now": "✨  Limpiar todo ahora"
+    "s.✨  Clean everything now": "✨  Limpiar todo ahora",
+    "s.Search": "Buscar",
+    "s.Sections & groups": "Secciones y grupos",
+    "s.Go to section": "Ir a la sección",
+    "s.result(s)": "resultado(s)",
+    "s.Nothing matched — try another word.": "Sin coincidencias — prueba otra palabra."
   },
   "zh": {
     "nav.Home": "主页",
@@ -2476,7 +2501,12 @@
     "s.Your system": "你的系统",
     "s.Your system, and what's worth looking at": "你的系统，以及值得关注的内容",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks 绝不会替你更改频率或电压。超频在 BIOS/UEFI 和 GPU 工具中进行，风险自负 — 此标签页仅做基准测试并推荐安全的起点。",
-    "s.✨  Clean everything now": "✨  立即清理一切"
+    "s.✨  Clean everything now": "✨  立即清理一切",
+    "s.Search": "搜索",
+    "s.Sections & groups": "分区与分组",
+    "s.Go to section": "前往分区",
+    "s.result(s)": "个结果",
+    "s.Nothing matched — try another word.": "无匹配 — 换个词试试。"
   },
   "it": {
     "nav.Home": "Home",
@@ -2861,7 +2891,12 @@
     "s.Your system": "Il tuo sistema",
     "s.Your system, and what's worth looking at": "Il tuo sistema, e cosa vale la pena guardare",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks non cambia mai clock o voltaggi al posto tuo. L'overclock si fa nel BIOS/UEFI e negli strumenti GPU, a tuo rischio — questa scheda fa solo benchmark e consiglia punti di partenza sicuri.",
-    "s.✨  Clean everything now": "✨  Pulisci tutto ora"
+    "s.✨  Clean everything now": "✨  Pulisci tutto ora",
+    "s.Search": "Cerca",
+    "s.Sections & groups": "Sezioni e gruppi",
+    "s.Go to section": "Vai alla sezione",
+    "s.result(s)": "risultato/i",
+    "s.Nothing matched — try another word.": "Nessun risultato — prova un'altra parola."
   },
   "ja": {
     "nav.Home": "ホーム",
@@ -3252,6 +3287,11 @@
     "s.Your system": "あなたのシステム",
     "s.Your system, and what's worth looking at": "あなたのシステムと、見ておくべきこと",
     "s.⚠  VoidTweaks never changes clocks or voltages for you. Overclocking is done in BIOS/UEFI and GPU tools, at your own risk — this tab only benchmarks and recommends safe starting points.": "⚠  VoidTweaks がクロックや電圧を勝手に変更することはありません。オーバークロックは BIOS/UEFI と GPU ツールで自己責任で — このタブはベンチマークと安全な開始点の提案のみ。",
-    "s.✨  Clean everything now": "✨  今すぐすべてクリーン"
+    "s.✨  Clean everything now": "✨  今すぐすべてクリーン",
+    "s.Search": "検索",
+    "s.Sections & groups": "セクションとグループ",
+    "s.Go to section": "セクションへ移動",
+    "s.result(s)": "件の結果",
+    "s.Nothing matched — try another word.": "一致なし — 別の言葉でお試しを。"
   }
 }

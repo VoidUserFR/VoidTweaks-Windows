@@ -365,6 +365,10 @@ public static class Engine
     public static string GetDiscordId() { try { return File.Exists(DiscordIdPath) ? File.ReadAllText(DiscordIdPath).Trim() : ""; } catch { return ""; } }
     public static void SetDiscordId(string id) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(DiscordIdPath, id.Trim()); } catch { } }
 
+    private static string AccentPath => Path.Combine(DataDir, "accent.txt");
+    public static string GetAccent() { try { return File.Exists(AccentPath) ? File.ReadAllText(AccentPath).Trim() : ""; } catch { return ""; } }
+    public static void SetAccent(string hex) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(AccentPath, hex.Trim()); } catch { } }
+
     public static bool FirstRun()
     {
         var marker = Path.Combine(DataDir, "first-run.done");

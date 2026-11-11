@@ -17,6 +17,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _sel = "";
     private string _search = "";
     private bool _navving;
+    private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
     private List<string> _undo = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
@@ -73,6 +74,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         Loc.Init();
+        var savedAccent = Engine.GetAccent();
+        if (!string.IsNullOrWhiteSpace(savedAccent)) { try { _accent = (Color)ColorConverter.ConvertFromString(savedAccent); } catch { } }
         _cat = Engine.Load();
         if (!IsAdmin()) AdminBar.Visibility = Visibility.Visible;
         LocalizeChrome();
@@ -83,7 +86,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         timer.Tick += (_, _) => UpdateLive();
         timer.Start();
         Log($"VoidTweaks (C# / WPF-UI Fluent) — {_cat.Tweaks.Count} tweaks loaded.");
-        Loaded += (_, _) => { if (Engine.FirstRun()) FirstRunTour(); };
+        Loaded += (_, _) => { ApplyAccent(); if (Engine.FirstRun()) FirstRunTour(); };
         var did = Engine.GetDiscordId();
         if (!string.IsNullOrWhiteSpace(did)) System.Threading.Tasks.Task.Run(() => StartRpc(did));
     }
@@ -177,14 +180,39 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (!string.IsNullOrEmpty(_search)) { _navving = true; try { SearchBox.Text = ""; } catch { } _navving = false; _search = ""; }
         _sel = name;
-        var accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
+        var accent = _accent;
         foreach (var kv in _nav)
         {
             bool on = kv.Key == name;
-            kv.Value.box.Background = on ? new SolidColorBrush(Color.FromArgb(38, accent.R, accent.G, accent.B)) : Brushes.Transparent;
+            kv.Value.box.Background = on ? new SolidColorBrush(Color.FromArgb(40, accent.R, accent.G, accent.B)) : Brushes.Transparent;
             kv.Value.label.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+            if (on) kv.Value.label.Foreground = new SolidColorBrush(accent);
+            else kv.Value.label.ClearValue(TextBlock.ForegroundProperty);
         }
         Render();
+        Fade();
+    }
+
+    private void Fade()
+    {
+        try
+        {
+            var a = new System.Windows.Media.Animation.DoubleAnimation(0.0, 1.0, System.TimeSpan.FromMilliseconds(160)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
+            TweakList.BeginAnimation(OpacityProperty, a);
+        }
+        catch { }
+    }
+
+    private void ApplyAccent()
+    {
+        try
+        {
+            var theme = Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme();
+            if (theme == Wpf.Ui.Appearance.ApplicationTheme.Unknown) theme = Wpf.Ui.Appearance.ApplicationTheme.Dark;
+            Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(_accent, theme);
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme, WindowBackdropType, false);
+        }
+        catch { }
     }
 
     private void SetHeaderIcon(string name)
@@ -857,8 +885,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var t = Section("Theme", "Dark or light base.");
         var trow = new StackPanel { Orientation = Orientation.Horizontal };
-        var dark = Btn("Dark", () => Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark)); dark.Width = 100; dark.Margin = new Thickness(0, 0, 8, 0);
-        var light = Btn("Light", () => Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light)); light.Width = 100;
+        var dark = Btn("Dark", () => { Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark); ApplyAccent(); }); dark.Width = 100; dark.Margin = new Thickness(0, 0, 8, 0);
+        var light = Btn("Light", () => { Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light); ApplyAccent(); }); light.Width = 100;
         trow.Children.Add(dark); trow.Children.Add(light); t.Children.Add(trow);
         TweakList.Items.Add(Card(t));
 
@@ -867,8 +895,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         foreach (var hex in new[] { "#8B7CF0", "#5B9BFF", "#35B9AD", "#4CC38A", "#E5AA3D", "#EF6A60", "#FF8FB1" })
         {
             var col = (Color)ColorConverter.ConvertFromString(hex);
-            var sw = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(15), Background = new SolidColorBrush(col), Margin = new Thickness(0, 0, 8, 0), Cursor = System.Windows.Input.Cursors.Hand, BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(1) };
-            sw.MouseLeftButtonUp += (_, _) => { try { var theme = Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme(); Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(col, theme); Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme); Render(); } catch { } };
+            bool selected = col.R == _accent.R && col.G == _accent.G && col.B == _accent.B;
+            var sw = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(15), Background = new SolidColorBrush(col), Margin = new Thickness(0, 0, 8, 0), Cursor = System.Windows.Input.Cursors.Hand, BorderBrush = new SolidColorBrush(selected ? Color.FromArgb(235, 255, 255, 255) : Color.FromArgb(60, 255, 255, 255)), BorderThickness = new Thickness(selected ? 2.5 : 1) };
+            var hx = hex;
+            sw.MouseLeftButtonUp += (_, _) => { _accent = col; Engine.SetAccent(hx); ApplyAccent(); Select(_sel); };
             arow.Children.Add(sw);
         }
         a.Children.Add(arow);
@@ -1257,6 +1287,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         BoostBtn.IsEnabled = ApplyAllBtn.IsEnabled = RevertAllBtn.IsEnabled = ScanBtn.IsEnabled = !b;
         Cursor = b ? System.Windows.Input.Cursors.Wait : null;
         HeaderSub.Opacity = b ? 0.35 : 0.65;
+        try { BusyRing.Visibility = b ? Visibility.Visible : Visibility.Collapsed; } catch { }
     }
 
     private void RunMany(IEnumerable<Tweak> set, bool revert, string label)
