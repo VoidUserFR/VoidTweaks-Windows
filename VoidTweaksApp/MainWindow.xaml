@@ -23,12 +23,20 @@
       </ui:TitleBar.Icon>
     </ui:TitleBar>
 
-    <Border x:Name="AdminBar" Grid.Row="1" Background="#553A2A14" Padding="16,7" Visibility="Collapsed">
-      <DockPanel>
-        <ui:Button x:Name="ElevateBtn" DockPanel.Dock="Right" Content="Restart as administrator" Appearance="Caution" Click="Elevate_Click" />
-        <TextBlock Text="⚠  Not elevated — admin tweaks are disabled until you restart as administrator." Foreground="#FFEAD9A6" VerticalAlignment="Center" />
-      </DockPanel>
-    </Border>
+    <StackPanel Grid.Row="1">
+      <Border x:Name="AdminBar" Background="#553A2A14" Padding="16,7" Visibility="Collapsed">
+        <DockPanel>
+          <ui:Button x:Name="ElevateBtn" DockPanel.Dock="Right" Content="Restart as administrator" Appearance="Caution" Click="Elevate_Click" />
+          <TextBlock Text="⚠  Not elevated — admin tweaks are disabled until you restart as administrator." Foreground="#FFEAD9A6" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+      <Border x:Name="UpdateBar" Background="#55143A2A" Padding="16,7" Visibility="Collapsed">
+        <DockPanel>
+          <ui:Button x:Name="UpdateBtn" DockPanel.Dock="Right" Content="Download" Appearance="Primary" Click="UpdateBtn_Click" />
+          <TextBlock x:Name="UpdateText" Foreground="#FFA6EAC0" VerticalAlignment="Center" />
+        </DockPanel>
+      </Border>
+    </StackPanel>
 
     <Border Grid.Row="2" Padding="20,4,20,10">
       <StackPanel Orientation="Horizontal">

@@ -369,6 +369,24 @@ public static class Engine
     public static string GetAccent() { try { return File.Exists(AccentPath) ? File.ReadAllText(AccentPath).Trim() : ""; } catch { return ""; } }
     public static void SetAccent(string hex) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(AccentPath, hex.Trim()); } catch { } }
 
+    private static string ThemePath => Path.Combine(DataDir, "theme.txt");
+    public static string GetThemeMode() { try { return File.Exists(ThemePath) ? File.ReadAllText(ThemePath).Trim() : ""; } catch { return ""; } }
+    public static void SetThemeMode(string m) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(ThemePath, m.Trim()); } catch { } }
+
+    // Returns the latest release tag (e.g. "v2.3") from GitHub, or "" on any failure.
+    public static async System.Threading.Tasks.Task<string> LatestVersionTag()
+    {
+        try
+        {
+            using var http = new System.Net.Http.HttpClient { Timeout = System.TimeSpan.FromSeconds(8) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("VoidTweaks-UpdateCheck");
+            var json = await http.GetStringAsync("https://api.github.com/repos/VoidUserFR/VoidTweaks-Windows/releases/latest");
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.GetProperty("tag_name").GetString() ?? "";
+        }
+        catch { return ""; }
+    }
+
     public static bool FirstRun()
     {
         var marker = Path.Combine(DataDir, "first-run.done");

@@ -18,6 +18,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
+    public const string Version = "2.3";
+    private System.Windows.Forms.NotifyIcon? _tray;
+    private string? _firstResult;
     private List<string> _undo = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
@@ -86,9 +89,103 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         timer.Tick += (_, _) => UpdateLive();
         timer.Start();
         Log($"VoidTweaks (C# / WPF-UI Fluent) — {_cat.Tweaks.Count} tweaks loaded.");
-        Loaded += (_, _) => { ApplyAccent(); if (Engine.FirstRun()) FirstRunTour(); };
+        SearchBox.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter && !string.IsNullOrWhiteSpace(_search) && _firstResult != null) Select(_firstResult); };
+        InitTray();
+        Loaded += (_, _) =>
+        {
+            var tm = Engine.GetThemeMode();
+            if (!string.IsNullOrEmpty(tm)) ApplyThemeMode(tm); else ApplyAccent();
+            CheckUpdates();
+            if (Engine.FirstRun()) FirstRunTour();
+        };
         var did = Engine.GetDiscordId();
         if (!string.IsNullOrWhiteSpace(did)) System.Threading.Tasks.Task.Run(() => StartRpc(did));
+    }
+
+    // ---------------- update checker ----------------
+    private async void CheckUpdates()
+    {
+        try
+        {
+            var tag = await Engine.LatestVersionTag();
+            var latest = tag.TrimStart('v', 'V').Trim();
+            if (!string.IsNullOrWhiteSpace(latest) && IsNewer(latest, Version))
+            {
+                UpdateText.Text = Loc.S("Update available") + $" — v{latest} 🎉";
+                UpdateBtn.Content = Loc.S("Download");
+                UpdateBar.Visibility = Visibility.Visible;
+            }
+        }
+        catch { }
+    }
+    private static bool IsNewer(string a, string b)
+    {
+        var pa = a.Split('.'); var pb = b.Split('.');
+        for (int i = 0; i < System.Math.Max(pa.Length, pb.Length); i++)
+        {
+            int x = i < pa.Length && int.TryParse(pa[i], out var xx) ? xx : 0;
+            int y = i < pb.Length && int.TryParse(pb[i], out var yy) ? yy : 0;
+            if (x != y) return x > y;
+        }
+        return false;
+    }
+    private void UpdateBtn_Click(object sender, RoutedEventArgs e) => OpenUrl("https://github.com/VoidUserFR/VoidTweaks-Windows/releases/latest");
+
+    // ---------------- system tray ----------------
+    private void InitTray()
+    {
+        try
+        {
+            _tray = new System.Windows.Forms.NotifyIcon { Text = "VoidTweaks", Visible = false };
+            try { var si = System.Windows.Application.GetResourceStream(new System.Uri("pack://application:,,,/VoidTweaks.ico")); if (si != null) _tray.Icon = new System.Drawing.Icon(si.Stream); } catch { }
+            var menu = new System.Windows.Forms.ContextMenuStrip();
+            menu.Items.Add(Loc.S("Open VoidTweaks"), null, (_, _) => RestoreFromTray());
+            menu.Items.Add(Loc.S("Boost now"), null, (_, _) => { RestoreFromTray(); BoostBtn_Click(this, new RoutedEventArgs()); });
+            menu.Items.Add("-");
+            menu.Items.Add(Loc.S("Quit"), null, (_, _) => { try { _tray!.Visible = false; } catch { } System.Windows.Application.Current.Shutdown(); });
+            _tray.ContextMenuStrip = menu;
+            _tray.DoubleClick += (_, _) => RestoreFromTray();
+        }
+        catch { }
+        StateChanged += (_, _) => { if (WindowState == WindowState.Minimized) MinimizeToTray(); };
+        Closed += (_, _) => { try { if (_tray != null) { _tray.Visible = false; _tray.Dispose(); } } catch { } };
+    }
+    private void MinimizeToTray()
+    {
+        try { if (_tray != null) { _tray.Visible = true; ShowInTaskbar = false; Hide(); } } catch { }
+    }
+    private void RestoreFromTray()
+    {
+        try { Show(); ShowInTaskbar = true; WindowState = WindowState.Normal; Activate(); if (_tray != null) _tray.Visible = false; } catch { }
+    }
+
+    // ---------------- theme modes (incl. soft dark) ----------------
+    private void ApplyThemeMode(string mode)
+    {
+        try
+        {
+            Engine.SetThemeMode(mode);
+            if (mode == "light")
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Mica;
+                ClearValue(BackgroundProperty);
+            }
+            else if (mode == "soft")
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
+                Background = new SolidColorBrush(Color.FromRgb(0x18, 0x15, 0x20)); // warm soft dark
+            }
+            else
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Mica;
+                ClearValue(BackgroundProperty);
+            }
+            ApplyAccent();
+        }
+        catch { }
     }
 
     private void StartRpc(string id)
@@ -107,14 +204,42 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void FirstRunTour()
     {
-        System.Windows.MessageBox.Show(this,
-            "Welcome to VoidTweaks — open, transparent and fully reversible.\n\n"
-          + "• Home  — live CPU/RAM usage + smart recommendations.\n"
-          + "• Tweaks are grouped by purpose. Each card glows GREEN when applied, RED when not — just flip the toggle.\n"
-          + "• Presets & Game profiles  — apply a curated set in one click (and save your own).\n"
-          + "• Networking / Overclock  — test your PC and get advice (no risky auto-changes).\n\n"
-          + "Everything can be reverted, and nothing leaves your PC. Tip: keep “Restore point first” ticked.",
-            "VoidTweaks — quick tour", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        var win = new Window { Title = "VoidTweaks", Width = 540, Height = 470, WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this, ResizeMode = ResizeMode.NoResize, WindowStyle = WindowStyle.None, AllowsTransparency = true, Background = Brushes.Transparent, ShowInTaskbar = false };
+        var card = new Border { CornerRadius = new CornerRadius(16), Background = new SolidColorBrush(Color.FromRgb(0x18, 0x15, 0x21)), BorderBrush = new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), BorderThickness = new Thickness(1), Padding = new Thickness(28), Margin = new Thickness(14), Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, BlurRadius = 34, ShadowDepth = 0, Opacity = 0.65 } };
+        var sp = new StackPanel();
+        var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+        var tile = new Border { Width = 44, Height = 44, CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(Color.FromArgb(40, _accent.R, _accent.G, _accent.B)), Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
+        var ring = new Grid();
+        ring.Children.Add(new Ellipse { Width = 26, Height = 26, Stroke = new SolidColorBrush(Color.FromRgb(0xE5, 0x9A, 0x3A)), StrokeThickness = 2.6, Opacity = 0.6, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        ring.Children.Add(new Ellipse { Width = 11, Height = 11, Fill = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        tile.Child = ring; head.Children.Add(tile);
+        head.Children.Add(new TextBlock { Text = "Welcome to VoidTweaks", FontSize = 22, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
+        sp.Children.Add(head);
+        sp.Children.Add(new TextBlock { Text = "Open, transparent and fully reversible — nothing leaves your PC.", Opacity = 0.7, Margin = new Thickness(0, 2, 0, 16), FontSize = 13 });
+        foreach (var s in new[]
+        {
+            "✅  Every card glows green when applied, red when not — just flip the toggle.",
+            "🔎  Search finds sections and tweaks instantly (typos are fine).",
+            "🧹  Cleanup, 🛡️ Security, 📶 Networking and ⚡ Overclock tools are built in.",
+            "↩️  Everything is reversible. Keep “Restore point first” ticked (it is by default).",
+        }) sp.Children.Add(new TextBlock { Text = s, Opacity = 0.85, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 9), FontSize = 13 });
+        sp.Children.Add(new TextBlock { Text = "Want a quick, safe tune-up to start?", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 14), FontSize = 13.5 });
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var skip = new Wpf.Ui.Controls.Button { Content = "I'll explore myself", Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0) };
+        var opt = new Wpf.Ui.Controls.Button { Content = "⚡ Quick optimize (safe)", Appearance = Wpf.Ui.Controls.ControlAppearance.Primary };
+        skip.Click += (_, _) => win.Close();
+        opt.Click += (_, _) =>
+        {
+            win.Close();
+            var p = Engine.LoadPresets().FirstOrDefault(x => x.Name.Contains("Productivity", System.StringComparison.OrdinalIgnoreCase));
+            Select("Presets");
+            if (p != null) ApplyPreset(p);
+        };
+        row.Children.Add(skip); row.Children.Add(opt);
+        sp.Children.Add(row);
+        card.Child = sp; win.Content = card;
+        win.MouseLeftButtonDown += (_, _) => { try { win.DragMove(); } catch { } };
+        try { win.ShowDialog(); } catch { }
     }
 
     // ---------------- navigation ----------------
@@ -326,8 +451,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             foreach (var t in hits) TweakList.Items.Add(BuildCard(t));
         }
 
+        _firstResult = dests.Count > 0 ? dests[0] : (hits.Count > 0 ? hits[0].Category : null);
         int total = dests.Count + hits.Count;
-        HeaderSub.Text = total == 0 ? Loc.S("Nothing matched — try another word.") : $"{total} " + Loc.S("result(s)") + $"  ·  “{query}”";
+        HeaderSub.Text = total == 0 ? Loc.S("Nothing matched — try another word.") : $"{total} " + Loc.S("result(s)") + $"  ·  “{query}”  ·  " + Loc.S("Enter to open top result");
         if (total == 0) TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing here."), Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) });
     }
 
@@ -482,6 +608,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         var baseBg = Color.FromArgb(30, 255, 255, 255);
         var hoverBg = Color.FromArgb(48, 255, 255, 255);
+        var eff = new System.Windows.Media.Effects.DropShadowEffect { Color = glow, BlurRadius = 18, ShadowDepth = 0, Opacity = 0 };
         var b = new Border
         {
             Background = new SolidColorBrush(baseBg),
@@ -491,8 +618,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             Padding = new Thickness(_compact ? 13 : 18),
             Margin = new Thickness(0, 0, 0, _compact ? 9 : 13),
             Child = child,
-            Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = glow, BlurRadius = 18, ShadowDepth = 0, Opacity = 0.5 }
+            Effect = eff
         };
+        // glow eases in so toggling applied/not-applied feels alive instead of snapping
+        b.Loaded += (_, _) => { var a = new System.Windows.Media.Animation.DoubleAnimation(0, 0.5, System.TimeSpan.FromMilliseconds(280)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } }; eff.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, a); };
         b.MouseEnter += (_, _) => b.Background = new SolidColorBrush(hoverBg);
         b.MouseLeave += (_, _) => b.Background = new SolidColorBrush(baseBg);
         return b;
@@ -885,9 +1014,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var t = Section("Theme", "Dark or light base.");
         var trow = new StackPanel { Orientation = Orientation.Horizontal };
-        var dark = Btn("Dark", () => { Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark); ApplyAccent(); }); dark.Width = 100; dark.Margin = new Thickness(0, 0, 8, 0);
-        var light = Btn("Light", () => { Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light); ApplyAccent(); }); light.Width = 100;
-        trow.Children.Add(dark); trow.Children.Add(light); t.Children.Add(trow);
+        var dark = Btn("Dark", () => ApplyThemeMode("dark")); dark.Width = 100; dark.Margin = new Thickness(0, 0, 8, 0);
+        var light = Btn("Light", () => ApplyThemeMode("light")); light.Width = 100; light.Margin = new Thickness(0, 0, 8, 0);
+        var soft = Btn("Soft dark", () => ApplyThemeMode("soft")); soft.Width = 100;
+        trow.Children.Add(dark); trow.Children.Add(light); trow.Children.Add(soft); t.Children.Add(trow);
         TweakList.Items.Add(Card(t));
 
         var a = Section("Accent colour", "Pick the highlight colour used across the app.");

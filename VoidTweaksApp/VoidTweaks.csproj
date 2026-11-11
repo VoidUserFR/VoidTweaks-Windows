@@ -3,12 +3,19 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Version>2.3.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>VoidTweaks</AssemblyName>
     <RootNamespace>VoidTweaks</RootNamespace>
     <ApplicationIcon>..\VoidTweaks.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- WinForms is enabled only for the tray NotifyIcon; keep its global usings out so Color/ProgressBar etc. stay WPF. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="WPF-UI" Version="3.0.5" />
   </ItemGroup>
