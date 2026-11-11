@@ -169,18 +169,21 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
                 WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Mica;
                 ClearValue(BackgroundProperty);
+                try { Root.ClearValue(System.Windows.Controls.Panel.BackgroundProperty); } catch { }
             }
             else if (mode == "soft")
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
                 WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
-                Background = new SolidColorBrush(Color.FromRgb(0x20, 0x1C, 0x2B)); // warm, noticeably lighter
+                var b = new SolidColorBrush(Color.FromRgb(0x22, 0x1D, 0x2E)); // warm, noticeably lighter
+                Background = b; try { Root.Background = b; } catch { }
             }
-            else
+            else // pure black dark
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
                 WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
-                Background = new SolidColorBrush(Color.FromRgb(0x09, 0x09, 0x0D)); // true near-black, clearly darker
+                var b = new SolidColorBrush(Colors.Black);
+                Background = b; try { Root.Background = b; } catch { }
             }
             ApplyAccent();
         }
