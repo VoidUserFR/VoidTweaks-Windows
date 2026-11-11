@@ -93,8 +93,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         InitTray();
         Loaded += (_, _) =>
         {
-            var tm = Engine.GetThemeMode();
-            if (!string.IsNullOrEmpty(tm)) ApplyThemeMode(tm); else ApplyAccent();
+            ApplyThemeMode(Engine.GetThemeMode() is { Length: > 0 } tm ? tm : "dark");
             CheckUpdates();
             if (Engine.FirstRun()) FirstRunTour();
         };
@@ -175,13 +174,13 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
                 WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
-                Background = new SolidColorBrush(Color.FromRgb(0x18, 0x15, 0x20)); // warm soft dark
+                Background = new SolidColorBrush(Color.FromRgb(0x20, 0x1C, 0x2B)); // warm, noticeably lighter
             }
             else
             {
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
-                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Mica;
-                ClearValue(BackgroundProperty);
+                WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
+                Background = new SolidColorBrush(Color.FromRgb(0x09, 0x09, 0x0D)); // true near-black, clearly darker
             }
             ApplyAccent();
         }
