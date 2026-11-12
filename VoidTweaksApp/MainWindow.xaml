@@ -128,5 +128,6 @@
         </Border>
       </Grid>
     </Grid>
+    <StackPanel x:Name="ToastHost" Grid.RowSpan="4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,22" IsHitTestVisible="False" />
   </Grid>
 </ui:FluentWindow>

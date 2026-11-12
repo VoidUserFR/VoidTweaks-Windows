@@ -18,9 +18,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "2.3";
+    public const string Version = "2.4";
     private System.Windows.Forms.NotifyIcon? _tray;
     private string? _firstResult;
+    private readonly Dictionary<string, (int total, int applied)> _catStats = new();
     private List<string> _undo = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
@@ -91,6 +92,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Log($"VoidTweaks (C# / WPF-UI Fluent) — {_cat.Tweaks.Count} tweaks loaded.");
         SearchBox.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter && !string.IsNullOrWhiteSpace(_search) && _firstResult != null) Select(_firstResult); };
         InitTray();
+        RestoreWindowBounds();
+        Closing += (_, _) => SaveWindowBounds();
         Loaded += (_, _) =>
         {
             ApplyThemeMode(Engine.GetThemeMode() is { Length: > 0 } tm ? tm : "dark");
@@ -156,6 +159,38 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void RestoreFromTray()
     {
         try { Show(); ShowInTaskbar = true; WindowState = WindowState.Normal; Activate(); if (_tray != null) _tray.Visible = false; } catch { }
+    }
+
+    // ---------------- remember window size/position ----------------
+    private void RestoreWindowBounds()
+    {
+        try
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var ns = System.Globalization.NumberStyles.Any;
+            var parts = Engine.GetWindowState().Split('|');
+            if (parts.Length < 5) return;
+            if (double.TryParse(parts[0], ns, inv, out var w) && double.TryParse(parts[1], ns, inv, out var h)
+                && double.TryParse(parts[2], ns, inv, out var l) && double.TryParse(parts[3], ns, inv, out var t))
+            {
+                double vw = SystemParameters.VirtualScreenWidth, vh = SystemParameters.VirtualScreenHeight;
+                if (w >= 820 && h >= 560 && w <= vw && h <= vh) { Width = w; Height = h; }
+                if (l > -40 && t > -40 && l < vw - 120 && t < vh - 120) { WindowStartupLocation = WindowStartupLocation.Manual; Left = l; Top = t; }
+            }
+            if (parts[4] == "Max") WindowState = WindowState.Maximized;
+        }
+        catch { }
+    }
+    private void SaveWindowBounds()
+    {
+        try
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var r = WindowState == WindowState.Maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
+            var st = WindowState == WindowState.Maximized ? "Max" : "Normal";
+            Engine.SetWindowState(string.Join("|", r.Width.ToString(inv), r.Height.ToString(inv), r.Left.ToString(inv), r.Top.ToString(inv), st));
+        }
+        catch { }
     }
 
     // ---------------- theme modes (incl. soft dark) ----------------
@@ -249,6 +284,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         NavPanel.Children.Clear();
         _nav.Clear();
+        _catStats.Clear();
+        foreach (var c in _cat.Categories) { var items = _cat.Tweaks.Where(t => t.Category == c).ToList(); _catStats[c] = (items.Count, items.Count(t => Engine.State(t) == "applied")); }
         AddGroup("OVERVIEW");
         foreach (var n in new[] { "Home", "Networking", "Health" }) AddItem(n);
         AddGroup("MENU");
@@ -291,11 +328,21 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void AddItem(string name)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal };
-        sp.Children.Add(NavIcon(name));
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var icon = NavIcon(name); Grid.SetColumn(icon, 0); grid.Children.Add(icon);
         var label = new TextBlock { Text = Loc.T("nav." + name, name), VerticalAlignment = VerticalAlignment.Center, FontSize = 13.5 };
-        sp.Children.Add(label);
-        var box = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(11, 9, 11, 9), Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent, Child = sp, Cursor = System.Windows.Input.Cursors.Hand };
+        Grid.SetColumn(label, 1); grid.Children.Add(label);
+        if (_catStats.TryGetValue(name, out var st) && st.total > 0)
+        {
+            var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            if (st.applied > 0) right.Children.Add(new Border { Width = 6, Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(C(0x4C, 0xC3, 0x8A)), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = $"{st.applied} applied" });
+            right.Children.Add(new TextBlock { Text = st.total.ToString(), FontSize = 11, Opacity = 0.4, VerticalAlignment = VerticalAlignment.Center });
+            Grid.SetColumn(right, 2); grid.Children.Add(right);
+        }
+        var box = new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(11, 9, 11, 9), Margin = new Thickness(0, 1, 0, 1), Background = Brushes.Transparent, Child = grid, Cursor = System.Windows.Input.Cursors.Hand };
         box.MouseLeftButtonUp += (_, _) => Select(name);
         box.MouseEnter += (_, _) => { if (_sel != name) box.Background = new SolidColorBrush(Color.FromArgb(22, 255, 255, 255)); };
         box.MouseLeave += (_, _) => { if (_sel != name) box.Background = Brushes.Transparent; };
@@ -559,7 +606,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var catHex = CatHex.TryGetValue(tw.Category, out var ch) ? ch : "#8B7CF0";
         var cc = (Color)ColorConverter.ConvertFromString(catHex);
-        var tile = new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(Color.FromArgb(38, cc.R, cc.G, cc.B)), Margin = new Thickness(0, 1, 16, 0), VerticalAlignment = VerticalAlignment.Top, Child = IconFor(tw.Category, 24) };
+        var tile = new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(Color.FromArgb(38, cc.R, cc.G, cc.B)), Margin = new Thickness(0, 1, 16, 0), VerticalAlignment = VerticalAlignment.Top, Child = IconFor(tw.Category, 24), ToolTip = tw.Apply.Count > 0 ? Loc.S("Runs:") + "\n" + string.Join("\n", tw.Apply) : null };
         Grid.SetColumn(tile, 0); grid.Children.Add(tile);
 
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -1452,8 +1499,41 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 if (ids.Count > 0) { _undo = ids; UndoBtn.IsEnabled = true; }
                 SetBusy(false);
                 Render();
+                ShowToast((revert ? Loc.S("Reverted") : Loc.S("Applied")) + " ✓");
             });
         });
+    }
+
+    // transient bottom-right toast
+    private void ShowToast(string msg)
+    {
+        try
+        {
+            var toast = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(0x24, 0x22, 0x30)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(15, 10, 15, 10),
+                Margin = new Thickness(0, 8, 0, 0),
+                Opacity = 0,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, BlurRadius = 20, ShadowDepth = 0, Opacity = 0.5 },
+                Child = new TextBlock { Text = msg, FontSize = 13, FontWeight = FontWeights.SemiBold }
+            };
+            ToastHost.Children.Add(toast);
+            toast.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, System.TimeSpan.FromMilliseconds(160)));
+            var timer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(2.6) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                var fo = new System.Windows.Media.Animation.DoubleAnimation(1, 0, System.TimeSpan.FromMilliseconds(320));
+                fo.Completed += (_, _) => { try { ToastHost.Children.Remove(toast); } catch { } };
+                toast.BeginAnimation(OpacityProperty, fo);
+            };
+            timer.Start();
+        }
+        catch { }
     }
 
     private void BoostBtn_Click(object sender, RoutedEventArgs e)
@@ -1470,6 +1550,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 Log(r);
                 SetBusy(false);
                 UpdateLive();
+                ShowToast(Loc.S("Boosted") + " ✓");
                 if (!admin && System.Windows.MessageBox.Show(this, Loc.S("Also purge the standby memory list? That frees the most RAM (RAMMap-style) but needs a one-time admin prompt."), Loc.S("VoidTweaks — Boost"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes)
                 {
                     Log("Requesting elevation to purge standby list…");

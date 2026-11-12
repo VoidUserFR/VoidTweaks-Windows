@@ -50,7 +50,8 @@ public static class Engine
     public static readonly HashSet<string> Actions = new(StringComparer.OrdinalIgnoreCase)
     { "clean-temp","clean-windows-temp","net-flush-dns","fix-wu-reset","fix-sfc-dism","fix-network-reset","fix-usb-detect","maint-free-ram",
       "maint-purge-standby","maint-trim-ssd","maint-empty-recyclebin","maint-benchmark","maint-network-test",
-      "maint-clear-store-cache","maint-clear-thumbnails","maint-restart-explorer","maint-dns-benchmark" };
+      "maint-clear-store-cache","maint-clear-thumbnails","maint-restart-explorer","maint-dns-benchmark",
+      "fix-icon-cache","fix-firewall-reset","maint-reregister-store" };
 
     public record AppInfo(string Name, string Id, string Cat);
     public static readonly List<AppInfo> Apps = new()
@@ -372,6 +373,10 @@ public static class Engine
     private static string ThemePath => Path.Combine(DataDir, "theme.txt");
     public static string GetThemeMode() { try { return File.Exists(ThemePath) ? File.ReadAllText(ThemePath).Trim() : ""; } catch { return ""; } }
     public static void SetThemeMode(string m) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(ThemePath, m.Trim()); } catch { } }
+
+    private static string WindowPath => Path.Combine(DataDir, "window.txt");
+    public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
+    public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }
 
     // Returns the latest release tag (e.g. "v2.3") from GitHub, or "" on any failure.
     public static async System.Threading.Tasks.Task<string> LatestVersionTag()
