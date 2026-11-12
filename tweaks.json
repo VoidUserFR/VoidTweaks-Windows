@@ -1765,14 +1765,14 @@
       "id": "maint-clear-store-cache",
       "name": "Reset Microsoft Store cache",
       "category": "Maintenance",
-      "description": "Clear the Store cache to fix download/install glitches (wsreset). One-time.",
+      "description": "Clear the Store cache to fix download/install glitches. Silent — won't open the Store. One-time.",
       "impact": "low",
       "risk": "low",
       "requiresAdmin": false,
       "needsRestart": false,
       "reversible": false,
       "apply": [
-        "wsreset.exe"
+        "Remove-Item \"$env:LocalAppData\\Packages\\Microsoft.WindowsStore_8wekyb3d8bbwe\\LocalCache\\*\" -Recurse -Force -ErrorAction SilentlyContinue; Write-Output 'Microsoft Store cache cleared.'"
       ],
       "revert": []
     },
