@@ -390,6 +390,136 @@ public static class Engine
     public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
     public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }
 
+    // ---- favorites (pinned tweaks) ----
+    private static string FavPath => Path.Combine(DataDir, "favorites.txt");
+    public static HashSet<string> GetFavorites()
+    {
+        try { return File.Exists(FavPath) ? new HashSet<string>(File.ReadAllLines(FavPath).Select(x => x.Trim()).Where(x => x.Length > 0), StringComparer.OrdinalIgnoreCase) : new(StringComparer.OrdinalIgnoreCase); }
+        catch { return new(StringComparer.OrdinalIgnoreCase); }
+    }
+    public static bool IsFavorite(string id) => GetFavorites().Contains(id);
+    public static bool ToggleFavorite(string id)
+    {
+        var set = GetFavorites();
+        bool now;
+        if (set.Contains(id)) { set.Remove(id); now = false; } else { set.Add(id); now = true; }
+        try { Directory.CreateDirectory(DataDir); File.WriteAllLines(FavPath, set); } catch { }
+        return now;
+    }
+
+    // ---- power plans ----
+    public static string PowerPlanActive()
+    {
+        var o = RunOne("$g=(powercfg -getactivescheme); if($g){ ($g -replace '.*\\(','' -replace '\\).*','').Trim() } else {''}");
+        return string.IsNullOrWhiteSpace(o) ? "Unknown" : o.Trim();
+    }
+    // kind: desktop (max performance), laptop (balanced + power saving), balanced (reset)
+    public static string ApplyPowerProfile(string kind)
+    {
+        var cmds = new List<string>();
+        if (kind == "desktop")
+        {
+            cmds.Add("$u='e9a42b02-d5df-448d-aa00-03f14749eb61'; if(-not (powercfg -list | Select-String $u)){ powercfg -duplicatescheme $u | Out-Null }; powercfg -setactive $u 2>$null; if($LASTEXITCODE){ powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c }; 'Activated max-performance power plan.'");
+            cmds.Add("powercfg -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100 2>$null; powercfg -setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null; powercfg -change -standby-timeout-ac 0 2>$null; powercfg -change -monitor-timeout-ac 0 2>$null; powercfg -setactive SCHEME_CURRENT; 'Tuned for desktop: 100% min CPU, USB suspend off, no sleep on AC.'");
+        }
+        else if (kind == "laptop")
+        {
+            cmds.Add("powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e; 'Activated Balanced plan (laptop-friendly).'");
+            cmds.Add("powercfg -setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5 2>$null; powercfg -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 10 2>$null; powercfg -setdcvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 2>$null; powercfg -change -monitor-timeout-dc 5 2>$null; powercfg -change -standby-timeout-dc 15 2>$null; powercfg -setactive SCHEME_CURRENT; 'Tuned for laptop: low min CPU on battery, USB suspend on, screen sleeps to save power.'");
+        }
+        else
+        {
+            cmds.Add("powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e; 'Reset to the default Balanced power plan.'");
+        }
+        return RunCommands(cmds);
+    }
+
+    // ---- network stress / sustained latency test (read-only) ----
+    public static string NetStress(string host, int seconds)
+    {
+        host = string.IsNullOrWhiteSpace(host) ? "1.1.1.1" : host.Trim();
+        var times = new List<long>();
+        int sent = 0, lost = 0;
+        try
+        {
+            using var ping = new System.Net.NetworkInformation.Ping();
+            var end = DateTime.UtcNow.AddSeconds(Math.Clamp(seconds, 5, 120));
+            while (DateTime.UtcNow < end)
+            {
+                sent++;
+                try { var r = ping.Send(host, 1000); if (r.Status == System.Net.NetworkInformation.IPStatus.Success) times.Add(r.RoundtripTime); else lost++; }
+                catch { lost++; }
+                System.Threading.Thread.Sleep(90);
+            }
+        }
+        catch (Exception e) { return "Could not run network test: " + e.Message; }
+        if (times.Count == 0) return $"No replies from {host} ({sent} sent, {lost} lost). Host may block ping.";
+        double avg = times.Average();
+        long min = times.Min(), max = times.Max();
+        double jitter = 0; for (int i = 1; i < times.Count; i++) jitter += Math.Abs(times[i] - times[i - 1]);
+        jitter = times.Count > 1 ? jitter / (times.Count - 1) : 0;
+        double lossPct = sent > 0 ? 100.0 * lost / sent : 0;
+        string grade = (jitter < 5 && lossPct < 1) ? "A+  excellent (gaming-grade)" : (jitter < 12 && lossPct < 2) ? "A  very good" : (jitter < 25 && lossPct < 5) ? "B  okay" : "C  unstable — check Wi‑Fi / router";
+        return $"Host    {host}   ({sent} pings, {times.Count} ok, {lost} lost)\n"
+             + $"Ping    min {min} ms   avg {avg:F0} ms   max {max} ms\n"
+             + $"Jitter  {jitter:F1} ms\n"
+             + $"Loss    {lossPct:F1} %\n"
+             + $"Grade   {grade}";
+    }
+
+    // ---- system restore points ----
+    public static string ListRestorePoints()
+    {
+        var s = "try { $p = Get-ComputerRestorePoint -ErrorAction Stop | Sort-Object CreationTime -Descending | Select-Object -First 10; "
+              + "if(-not $p){ 'No restore points yet. Create one above for a safety net.' } else { "
+              + "($p | ForEach-Object { '{0}   {1}   (#{2})' -f ([Management.ManagementDateTimeConverter]::ToDateTime($_.CreationTime).ToString('yyyy-MM-dd HH:mm')), $_.Description, $_.SequenceNumber }) -join \"`r`n\" } } "
+              + "catch { 'Could not read restore points (System Protection may be off, or needs admin): ' + $_.Exception.Message }";
+        return RunOne(s);
+    }
+    public static string CreateRestorePointNamed()
+        => RunOne("try { Enable-ComputerRestore -Drive \"$env:SystemDrive\\\" -ErrorAction SilentlyContinue; Checkpoint-Computer -Description ('VoidTweaks ' + (Get-Date -Format 'MMM d HH:mm')) -RestorePointType MODIFY_SETTINGS -ErrorAction Stop; 'Restore point created.' } catch { 'Could not create restore point (needs admin, and max 1 per ~24h by default): ' + $_.Exception.Message }");
+    public static void OpenRestoreUi() { try { Process.Start(new ProcessStartInfo("rstrui.exe") { UseShellExecute = true }); } catch { } }
+
+    // ---- system report (shareable HTML) ----
+    public static string SystemReportHtml(string path, IEnumerable<(string name, string state, string cat)> tweaks, IEnumerable<string> favorites)
+    {
+        try
+        {
+            string specs = System.Net.WebUtility.HtmlEncode(SpecInfo());
+            string power = System.Net.WebUtility.HtmlEncode(PowerPlanActive());
+            var tl = tweaks.ToList();
+            int applied = tl.Count(t => t.state == "applied");
+            var favSet = new HashSet<string>(favorites, StringComparer.OrdinalIgnoreCase);
+            var sb = new StringBuilder();
+            sb.Append("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>VoidTweaks report</title><style>");
+            sb.Append("body{background:#0b0a10;color:#e8e8ef;font-family:Segoe UI,system-ui,sans-serif;margin:0;padding:32px;max-width:900px;margin:auto}");
+            sb.Append("h1{font-size:26px;margin:0 0 4px}.sub{opacity:.55;font-size:13px;margin-bottom:24px}");
+            sb.Append(".card{background:#16141f;border:1px solid #2a2834;border-radius:14px;padding:20px;margin-bottom:16px}");
+            sb.Append("pre{font-family:Cascadia Mono,Consolas,monospace;font-size:13px;white-space:pre-wrap;margin:0;opacity:.85}");
+            sb.Append(".chip{display:inline-block;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:600;margin:3px 6px 3px 0}");
+            sb.Append(".on{background:#15321f;color:#6fe0a0}.off{background:#2a2834;color:#9a9aa6}");
+            sb.Append("table{width:100%;border-collapse:collapse;font-size:13px}td{padding:6px 8px;border-bottom:1px solid #221f2c}");
+            sb.Append("h2{font-size:15px;margin:0 0 12px}.acc{color:#8B7CF0}</style></head><body>");
+            sb.Append($"<h1>⚡ VoidTweaks <span class=\"acc\">system report</span></h1>");
+            sb.Append($"<div class=\"sub\">Generated {System.Net.WebUtility.HtmlEncode(DateTime.Now.ToString("dddd, MMM d yyyy · HH:mm"))} · {applied} of {tl.Count} tweaks applied · Power plan: {power}</div>");
+            sb.Append($"<div class=\"card\"><h2>Hardware</h2><pre>{specs}</pre></div>");
+            var byCat = tl.Where(t => t.state == "applied").GroupBy(t => t.cat).OrderBy(g => g.Key).ToList();
+            sb.Append("<div class=\"card\"><h2>Applied tweaks</h2>");
+            if (byCat.Count == 0) sb.Append("<div style=\"opacity:.6\">None yet.</div>");
+            foreach (var g in byCat)
+            {
+                sb.Append($"<div style=\"margin:10px 0 2px;opacity:.5;font-size:12px;font-weight:600\">{System.Net.WebUtility.HtmlEncode(g.Key)}</div>");
+                foreach (var t in g) sb.Append($"<span class=\"chip on\">{(favSet.Contains(t.name) ? "★ " : "")}{System.Net.WebUtility.HtmlEncode(t.name)}</span>");
+            }
+            sb.Append("</div>");
+            sb.Append("<div class=\"sub\" style=\"text-align:center;margin-top:24px\">github.com/VoidUserFR/VoidTweaks-Windows — open, transparent, reversible.</div>");
+            sb.Append("</body></html>");
+            File.WriteAllText(path, sb.ToString());
+            return "Report saved: " + path;
+        }
+        catch (Exception e) { return "Report failed: " + e.Message; }
+    }
+
     // Returns the latest release tag (e.g. "v2.3") from GitHub, or "" on any failure.
     public static async System.Threading.Tasks.Task<string> LatestVersionTag()
     {

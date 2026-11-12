@@ -18,7 +18,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "2.5";
+    public const string Version = "2.6";
+    private HashSet<string> _favs = Engine.GetFavorites();
+    private string _perfTab = "Power plans";
+    private System.Threading.CancellationTokenSource? _stressCts;
     private System.Windows.Forms.NotifyIcon? _tray;
     private string? _firstResult;
     private readonly Dictionary<string, (int total, int applied)> _catStats = new();
@@ -62,6 +65,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Home"] = "M3 11l9-7 9 7 M5 10v9h5v-6h4v6h5v-9",
         ["Networking"] = "M12 19h.01 M8.5 15.5a5 5 0 0 1 7 0 M5 12a10 10 0 0 1 14 0 M2 8.5a15 15 0 0 1 20 0",
         ["Overclock"] = "M12 13a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z M12 11.4 16 8 M4 18a9 9 0 1 1 16 0",
+        ["Power & Stress"] = "M13 2 4 14h6l-1 8 9-12h-6z",
+        ["Favorites"] = "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z",
+        ["Restore"] = "M3 12a9 9 0 1 0 3-6.7 M3 4v4h4 M12 7v5l4 2",
         ["Game profiles"] = "M7 11h4 M9 9v4 M4 16l2-7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 7a2.5 2.5 0 0 1-4.6 1.3L17 15H7l-.4 1.3A2.5 2.5 0 0 1 4 16z",
         ["Cleanup"] = "M12 3l1.6 4 4 1.6-4 1.6L12 14l-1.6-3.8-4-1.6 4-1.6z M6 16l.8 2 2 .8-2 .8L6 22l-.8-2.4-2-.8 2-.8z",
         ["Security"] = "M12 3 5 6v6c0 4 3 6.5 7 9 4-2.5 7-5 7-9V6z M9 12l2 2 4-4",
@@ -75,6 +81,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Debloat"] = "#9AA0AD", ["Fixes"] = "#5AC8FA", ["Updates"] = "#5B9BFF", ["Maintenance"] = "#5FD0C5",
         ["Home"] = "#35B9AD", ["Networking"] = "#5B9BFF", ["Overclock"] = "#EF6A60", ["Game profiles"] = "#EF6A60",
         ["Cleanup"] = "#5FD0C5", ["Security"] = "#4CC38A",
+        ["Power & Stress"] = "#EF6A60", ["Favorites"] = "#F2C14E", ["Restore"] = "#5AC8FA",
     };
 
     public MainWindow()
@@ -299,12 +306,13 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         AddGroup("OVERVIEW");
         foreach (var n in new[] { "Home", "Networking", "Health" }) AddItem(n);
         AddGroup("MENU");
-        foreach (var n in new[] { "All", "Needs attention", "Cleanup", "Security", "Presets", "Startup", "Processes" }) AddItem(n);
+        foreach (var n in new[] { "All", "Favorites", "Needs attention", "Cleanup", "Security", "Presets", "Startup", "Processes" }) AddItem(n);
         AddGroup("INSTALL & TUNE");
-        foreach (var n in new[] { "Apps", "Game profiles", "Overclock" }) AddItem(n);
+        foreach (var n in new[] { "Apps", "Game profiles", "Overclock", "Power & Stress" }) AddItem(n);
         AddGroup("TWEAKS");
         foreach (var c in _cat.Categories) AddItem(c);
         AddGroup("APP");
+        AddItem("Restore");
         AddItem("Settings");
         Select("Home");
     }
@@ -410,6 +418,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void Render()
     {
         _liveHook = null;
+        try { _stressCts?.Cancel(); } catch { }
         if (!string.IsNullOrWhiteSpace(_search)) { SetHeaderIcon("All"); ShowSearchResults(_search); return; }
         SetHeaderIcon(_sel);
         switch (_sel)
@@ -417,6 +426,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             case "Home": ShowHome(); break;
             case "Networking": ShowNetwork(); break;
             case "Overclock": ShowOverclock(); break;
+            case "Power & Stress": ShowPerformanceLab(); break;
+            case "Favorites": ShowFavorites(); break;
+            case "Restore": ShowRestore(); break;
             case "Game profiles": ShowGameProfiles(); break;
             case "Cleanup": ShowCleanup(); break;
             case "Security": ShowSecurity(); break;
@@ -471,6 +483,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Cleanup"] = "clean junk temp cache debloat bloat trash sweep recycle",
         ["Security"] = "virus antivirus scan malware defender tron threat offline",
         ["Overclock"] = "overclock oc benchmark fps xmp expo cpu gpu ram speed tuning",
+        ["Power & Stress"] = "power plan powerplan desktop laptop stress test cpu burn torture wifi network stability jitter loss performance",
+        ["Favorites"] = "favorites favourite starred pinned pins my tweaks star",
+        ["Restore"] = "restore point rollback system protection backup checkpoint recover undo",
         ["Game profiles"] = "game gaming fps profile valorant warzone competitive",
         ["Apps"] = "install apps winget software download programs browser",
         ["Processes"] = "process task kill end useless memory hog",
@@ -630,6 +645,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Grid.SetColumn(left, 1); grid.Children.Add(left);
 
         var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(14, 0, 0, 0) };
+        right.Children.Add(FavStar(tw.Id));
         right.Children.Add(Pill(state));
         if (toggleable)
         {
@@ -651,6 +667,23 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Grid.SetColumn(right, 2); grid.Children.Add(right);
 
         return GlowCard(grid, glow);
+    }
+
+    private FrameworkElement FavStar(string id)
+    {
+        bool fav = _favs.Contains(id);
+        var star = new TextBlock { Text = fav ? "★" : "☆", FontSize = 17, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 2, 4), Cursor = System.Windows.Input.Cursors.Hand, Foreground = new SolidColorBrush(fav ? C(0xF2, 0xC1, 0x4E) : Color.FromArgb(120, 255, 255, 255)), ToolTip = Loc.S(fav ? "Unpin from Favorites" : "Pin to Favorites") };
+        star.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            bool now = Engine.ToggleFavorite(id);
+            _favs = Engine.GetFavorites();
+            star.Text = now ? "★" : "☆";
+            star.Foreground = new SolidColorBrush(now ? C(0xF2, 0xC1, 0x4E) : Color.FromArgb(120, 255, 255, 255));
+            star.ToolTip = Loc.S(now ? "Unpin from Favorites" : "Pin to Favorites");
+            ShowToast(now ? Loc.S("Pinned ★") : Loc.S("Unpinned"));
+        };
+        return star;
     }
 
     private static FrameworkElement IconFor(string name, double size)
@@ -1048,6 +1081,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Check("Startup apps", startupN > 8, $"{startupN} apps launch at boot.");
         bool hdd = media.Equals("HDD", StringComparison.OrdinalIgnoreCase);
         if (hdd) Check("Hard drive (HDD)", true, "On an HDD, keep SysMain on. An SSD is the biggest speed-up.");
+
+        var rep = Section("Share a system report", "Export a clean HTML page with your specs, active power plan and every applied tweak — great for forums, friends or a before/after record. Nothing personal, nothing leaves your PC unless you share the file.");
+        var rb = Btn("Export system report…", ExportSystemReport); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
+        rep.Children.Add(rb);
+        TweakList.Items.Add(Card(rep));
+    }
+
+    private void ExportSystemReport()
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog { FileName = $"voidtweaks-report-{System.DateTime.Now:yyyy-MM-dd}.html", Filter = "HTML report (*.html)|*.html", DefaultExt = ".html" };
+        if (dlg.ShowDialog(this) != true) return;
+        var path = dlg.FileName;
+        var tweaks = _cat.Tweaks.Select(t => (Loc.T("tw." + t.Id, t.Name), Engine.State(t), t.Category)).ToList();
+        var favs = Engine.GetFavorites().ToList();
+        Log("=== export system report ===");
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var r = Engine.SystemReportHtml(path, tweaks, favs);
+            Dispatcher.Invoke(() => { Log(r); ShowToast(Loc.S("Report saved") + " ✓"); OpenUrl(path); });
+        });
     }
 
     private static Border Row(UIElement pill, string title, string detail)
@@ -1470,6 +1523,257 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); Log("Opened: " + url); } catch (System.Exception ex) { Log("Could not open link: " + ex.Message); }
     }
 
+    // ================ Performance lab (EXM-style): power plans + stress tests ================
+    private void ShowPerformanceLab()
+    {
+        HeaderTitle.Text = Loc.S("Power & Stress");
+        HeaderSub.Text = Loc.S("Pick a power profile, then stress-test your PC or connection to prove it's stable");
+        TweakList.Items.Clear();
+
+        var seg = new WrapPanel { Margin = new Thickness(2, 0, 0, 14) };
+        foreach (var tabn in new[] { "Power plans", "PC stress", "Network stress" })
+        {
+            bool on = tabn == _perfTab;
+            var tb = new Wpf.Ui.Controls.Button { Content = Loc.S(tabn), Appearance = on ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0) };
+            var t = tabn; tb.Click += (_, _) => { try { _stressCts?.Cancel(); } catch { } _perfTab = t; ShowPerformanceLab(); };
+            seg.Children.Add(tb);
+        }
+        TweakList.Items.Add(seg);
+
+        switch (_perfTab)
+        {
+            case "PC stress": BuildPcStress(); break;
+            case "Network stress": BuildNetStress(); break;
+            default: BuildPowerPlans(); break;
+        }
+    }
+
+    private void BuildPowerPlans()
+    {
+        var active = new TextBlock { Text = Loc.S("Reading active plan…"), Opacity = 0.75, FontSize = 12.5, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+        var banner = Section("Active power plan", "");
+        banner.Children.Add(active);
+        TweakList.Items.Add(Card(banner));
+        System.Threading.Tasks.Task.Run(() => { var a = Engine.PowerPlanActive(); Dispatcher.Invoke(() => active.Text = "⚡  " + a); });
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var laptop = ExmCard("💻  Laptop / Balanced", "Battery-friendly",
+            "Keeps your system cool and efficient, saving battery while still performing well. Best for laptops and handhelds.",
+            new (string, int)[] { ("Responsiveness", 3), ("FPS stability", 3), ("Power saving", 4), ("Low temperature", 4) },
+            "Apply →", () => RunPowerPlan("laptop", "Laptop / Balanced"), C(0x35, 0xB9, 0xAD));
+        laptop.Margin = new Thickness(0, 0, 7, 0);
+        var desktop = ExmCard("🖥  Desktop / Max performance", "Unlocked",
+            "Unlocks maximum performance and responsiveness — 100% min CPU, no sleep, USB power-saving off. Perfect for gaming or heavy workloads on a plugged-in PC.",
+            new (string, int)[] { ("Responsiveness", 5), ("FPS stability", 4), ("Power consumption", 4), ("Temperature", 3) },
+            "Apply →", () => RunPowerPlan("desktop", "Desktop / Max performance"), C(0xEF, 0x6A, 0x60));
+        desktop.Margin = new Thickness(7, 0, 0, 0);
+        Grid.SetColumn(laptop, 0); Grid.SetColumn(desktop, 1);
+        grid.Children.Add(laptop); grid.Children.Add(desktop);
+        TweakList.Items.Add(grid);
+
+        var reset = Section("Back to default", "Restore the stock Windows Balanced plan at any time.");
+        var rb = Btn("Reset to Balanced", () => RunPowerPlan("balanced", "Balanced (default)"));
+        if (!IsAdmin()) { rb.IsEnabled = false; rb.ToolTip = Loc.S("Needs administrator"); }
+        reset.Children.Add(rb);
+        TweakList.Items.Add(Card(reset));
+    }
+
+    private void RunPowerPlan(string kind, string label)
+    {
+        if (!IsAdmin()) { Log("Power plans need administrator — restart as admin."); return; }
+        Log($"=== power plan: {label} ===");
+        SetBusy(true);
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var r = Engine.ApplyPowerProfile(kind);
+            Dispatcher.Invoke(() => { Log(r); SetBusy(false); ShowToast(Loc.S("Power plan applied") + " ✓"); if (_sel == "Power & Stress" && _perfTab == "Power plans") ShowPerformanceLab(); });
+        });
+    }
+
+    private void BuildPcStress()
+    {
+        var card = Section("PC stress test", "Pushes every CPU core to 100% for a set time to check stability and cooling. Read-only — it runs no commands and changes nothing. Watch your temps; stop anytime.");
+        var big = new TextBlock { Text = "Idle", FontSize = 34, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 4, 0, 2) };
+        var sub = new TextBlock { Text = Loc.S("Press start to begin the test."), Opacity = 0.7, FontSize = 12.5 };
+        var bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 8, Value = 0, Margin = new Thickness(0, 12, 0, 12) };
+        card.Children.Add(big); card.Children.Add(sub); card.Children.Add(bar);
+
+        int dur = 60;
+        var durRow = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
+        var durBtns = new List<Wpf.Ui.Controls.Button>();
+        foreach (var d in new[] { 30, 60, 120 })
+        {
+            var b = new Wpf.Ui.Controls.Button { Content = d + "s", Appearance = d == dur ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0), Width = 70 };
+            var dd = d; b.Click += (_, _) => { dur = dd; foreach (var x in durBtns) x.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary; b.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; };
+            durBtns.Add(b); durRow.Children.Add(b);
+        }
+        card.Children.Add(durRow);
+
+        var start = new Wpf.Ui.Controls.Button { Content = Loc.S("▶  Start stress test"), Appearance = Wpf.Ui.Controls.ControlAppearance.Danger, Width = 200 };
+        var stop = new Wpf.Ui.Controls.Button { Content = Loc.S("■  Stop"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 110, Margin = new Thickness(8, 0, 0, 0), IsEnabled = false };
+        var brow = new StackPanel { Orientation = Orientation.Horizontal };
+        brow.Children.Add(start); brow.Children.Add(stop);
+        card.Children.Add(brow);
+        TweakList.Items.Add(Card(card));
+
+        start.Click += (_, _) =>
+        {
+            try { _stressCts?.Cancel(); } catch { }
+            var cts = new System.Threading.CancellationTokenSource();
+            _stressCts = cts;
+            start.IsEnabled = false; stop.IsEnabled = true;
+            int total = dur; var sw = System.Diagnostics.Stopwatch.StartNew();
+            int cores = System.Math.Max(1, System.Environment.ProcessorCount);
+            for (int i = 0; i < cores; i++)
+                System.Threading.Tasks.Task.Run(() => { double x = 1.0001; while (!cts.IsCancellationRequested) { x = System.Math.Sqrt(x * 1.0000001 + 1.234); } }, cts.Token);
+
+            long peak = 0;
+            _liveHook = () =>
+            {
+                if (cts.IsCancellationRequested) return;
+                double el = sw.Elapsed.TotalSeconds;
+                bar.Value = System.Math.Min(100, el / total * 100);
+                big.Text = _cpuPct + "%  CPU";
+                peak = System.Math.Max(peak, _cpuPct);
+                sub.Text = $"{Loc.S("Load across")} {cores} {Loc.S("cores")} · {System.Math.Max(0, total - (int)el)}s {Loc.S("left")} · {Loc.S("peak")} {peak}%";
+                if (el >= total) { cts.Cancel(); }
+            };
+            var watchdog = new DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(300) };
+            watchdog.Tick += (_, _) =>
+            {
+                if (cts.IsCancellationRequested)
+                {
+                    watchdog.Stop();
+                    _liveHook = null;
+                    bar.Value = 100; big.Text = Loc.S("Done"); sub.Text = $"{Loc.S("Finished")} · {Loc.S("peak CPU")} {peak}%. {Loc.S("No crash = stable.")}";
+                    start.IsEnabled = true; stop.IsEnabled = false;
+                    ShowToast(Loc.S("Stress test finished") + " ✓");
+                }
+            };
+            watchdog.Start();
+            Log($"=== PC stress test: {total}s on {cores} cores ===");
+        };
+        stop.Click += (_, _) => { try { _stressCts?.Cancel(); } catch { } };
+    }
+
+    private void BuildNetStress()
+    {
+        var card = Section("Network / Wi‑Fi stress test", "Fires a sustained stream of pings at a host and measures jitter and packet loss over time — the numbers that actually matter for online gaming. Read-only.");
+        var host = new Wpf.Ui.Controls.TextBox { Text = "1.1.1.1", PlaceholderText = Loc.S("Host or IP (e.g. 1.1.1.1 or your game server)"), Margin = new Thickness(0, 0, 0, 10) };
+        card.Children.Add(host);
+        int dur = 15;
+        var durRow = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
+        var durBtns = new List<Wpf.Ui.Controls.Button>();
+        foreach (var d in new[] { 10, 15, 30 })
+        {
+            var b = new Wpf.Ui.Controls.Button { Content = d + "s", Appearance = d == dur ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0), Width = 70 };
+            var dd = d; b.Click += (_, _) => { dur = dd; foreach (var x in durBtns) x.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary; b.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; };
+            durBtns.Add(b); durRow.Children.Add(b);
+        }
+        card.Children.Add(durRow);
+        var res = new TextBlock { Text = Loc.S(""), Opacity = 0.85, FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 21 };
+        var run = new Wpf.Ui.Controls.Button { Content = Loc.S("Run network test"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 180 };
+        run.Click += (_, _) =>
+        {
+            var h = (host.Text ?? "1.1.1.1").Trim(); int d = dur;
+            run.IsEnabled = false; res.Text = Loc.S("Testing… this takes the full duration.");
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                string r; try { r = Engine.NetStress(h, d); } catch (System.Exception ex) { r = "Error: " + ex.Message; }
+                Dispatcher.Invoke(() => { res.Text = r; Log(r); run.IsEnabled = true; });
+            });
+        };
+        card.Children.Add(run); card.Children.Add(res);
+        TweakList.Items.Add(Card(card));
+    }
+
+    // EXM-inspired card: title + status pill, description, metric pip-rows, full-width action button.
+    private Border ExmCard(string title, string status, string desc, (string label, int filled)[] metrics, string btnText, System.Action onClick, Color accent)
+    {
+        var sp = new StackPanel();
+        var head = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var tt = new TextBlock { Text = Loc.S(title), FontSize = 16, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+        Grid.SetColumn(tt, 0); head.Children.Add(tt);
+        var stRow = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top };
+        stRow.Children.Add(new TextBlock { Text = Loc.S(status), Foreground = new SolidColorBrush(accent), FontSize = 11.5, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+        stRow.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Background = new SolidColorBrush(accent), VerticalAlignment = VerticalAlignment.Center });
+        Grid.SetColumn(stRow, 1); head.Children.Add(stRow);
+        sp.Children.Add(head);
+        sp.Children.Add(new TextBlock { Text = Loc.S(desc), Opacity = 0.6, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 14) });
+        foreach (var (label, filled) in metrics) sp.Children.Add(PipRow(label, filled, accent));
+        var btn = new Wpf.Ui.Controls.Button { Content = Loc.S(btnText), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 16, 0, 0), Height = 40 };
+        if (!IsAdmin()) { btn.IsEnabled = false; btn.ToolTip = Loc.S("Needs administrator"); }
+        btn.Click += (_, _) => onClick();
+        sp.Children.Add(btn);
+        return GlowCard(sp, accent);
+    }
+
+    private static FrameworkElement PipRow(string label, int filled, Color accent)
+    {
+        var g = new Grid { Margin = new Thickness(0, 0, 0, 9) };
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var lab = new TextBlock { Text = Loc.S(label), FontSize = 12.5, Opacity = 0.85, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(lab, 0); g.Children.Add(lab);
+        var pips = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        for (int i = 0; i < 5; i++)
+            pips.Children.Add(new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(4.5), Margin = new Thickness(3, 0, 0, 0), Background = new SolidColorBrush(i < filled ? accent : Color.FromArgb(40, 255, 255, 255)) });
+        Grid.SetColumn(pips, 1); g.Children.Add(pips);
+        return g;
+    }
+
+    // ================ favorites ================
+    private void ShowFavorites()
+    {
+        _favs = Engine.GetFavorites();
+        var items = _cat.Tweaks.Where(t => _favs.Contains(t.Id)).ToList();
+        HeaderTitle.Text = Loc.S("Favorites");
+        if (items.Count == 0)
+        {
+            HeaderSub.Text = Loc.S("Star any tweak to pin it here");
+            TweakList.Items.Clear();
+            TweakList.Items.Add(Card(Section("No favorites yet", "Open any category and tap the ☆ star on a tweak card. Your pinned tweaks collect here for one-tap access.")));
+            return;
+        }
+        ShowTweakList(Loc.S("Favorites"), items);
+    }
+
+    // ================ restore points ================
+    private void ShowRestore()
+    {
+        HeaderTitle.Text = Loc.S("Restore points");
+        HeaderSub.Text = Loc.S("Your safety net — snapshot Windows before big changes, roll back if anything breaks");
+        TweakList.Items.Clear();
+
+        var make = Section("Create a restore point", "Snapshots system files, the registry and settings. VoidTweaks already offers this before applying tweaks (the 'Restore point first' checkbox).");
+        var mb = Btn("Create restore point now", () =>
+        {
+            Log("=== create restore point ===");
+            SetBusy(true);
+            System.Threading.Tasks.Task.Run(() => { var r = Engine.CreateRestorePointNamed(); Dispatcher.Invoke(() => { Log(r); SetBusy(false); ShowToast(Loc.S("Restore point") + " ✓"); if (_sel == "Restore") ShowRestore(); }); });
+        });
+        mb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
+        if (!IsAdmin()) { mb.IsEnabled = false; mb.ToolTip = Loc.S("Needs administrator"); }
+        make.Children.Add(mb);
+        TweakList.Items.Add(Card(make));
+
+        var list = Section("Recent restore points", "The last 10 snapshots on this PC.");
+        var listTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.78, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 20 };
+        list.Children.Add(listTxt);
+        TweakList.Items.Add(Card(list));
+        RunAsync(Engine.ListRestorePoints, listTxt);
+
+        var roll = Section("Roll back", "Opens Windows System Restore so you can pick a point and revert. VoidTweaks never rolls back silently — you confirm it there.");
+        var rb = Btn("Open System Restore", () => Engine.OpenRestoreUi()); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
+        roll.Children.Add(rb);
+        TweakList.Items.Add(Card(roll));
+    }
+
     // ---------------- shared ----------------
     private static Grid TwoCol()
     {
@@ -1519,7 +1823,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             "custom" => ("Custom value", C(0xE5, 0xAA, 0x3D)),
             "default" => ("Not applied", C(0x9A, 0x9A, 0xA6)),
             "action" => ("One-time", C(0x5B, 0x9B, 0xFF)),
-            _ => ("Scan", C(0x9A, 0x9A, 0xA6))
+            _ => ("Ready", C(0x9A, 0x9A, 0xA6))
         };
         return PillBox(txt, c);
     }

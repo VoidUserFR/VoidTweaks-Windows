@@ -2167,6 +2167,120 @@
         "Get-AppxPackage Microsoft.WindowsStore | ForEach-Object { Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppXManifest.xml\" -ErrorAction SilentlyContinue }; 'Re-registered Microsoft Store.'"
       ],
       "revert": []
+    },
+    {
+      "id": "perf-long-paths-on",
+      "name": "Enable long file paths (260+ chars)",
+      "category": "Performance",
+      "description": "Lets Windows and apps use file paths longer than 260 characters — fixes 'path too long' errors in deep folders, Node projects and games.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 1 /f" ],
+      "revert": [ "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 0 /f" ]
+    },
+    {
+      "id": "perf-auto-maintenance-off",
+      "name": "Disable automatic maintenance",
+      "category": "Performance",
+      "description": "Stops Windows from running its own background maintenance (defrag, updates, diagnostics) at random idle times — no surprise disk/CPU spikes mid-game.",
+      "impact": "medium",
+      "risk": "medium",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 1 /f" ],
+      "revert": [ "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 0 /f" ]
+    },
+    {
+      "id": "perf-reserved-storage-off",
+      "name": "Disable Reserved Storage (frees ~7 GB)",
+      "category": "Performance",
+      "description": "Reclaims the multi-gigabyte chunk Windows reserves for updates. Frees space now; Windows may re-reserve it at the next big feature update.",
+      "impact": "high",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "DISM /Online /Set-ReservedStorageState /State:Disabled; 'Reserved storage disabled.'" ],
+      "revert": [ "DISM /Online /Set-ReservedStorageState /State:Enabled; 'Reserved storage re-enabled.'" ]
+    },
+    {
+      "id": "priv-clipboard-history-on",
+      "name": "Enable clipboard history (Win+V)",
+      "category": "Privacy",
+      "description": "Turns on the multi-item clipboard — press Win+V to paste anything you copied recently. Local to your PC.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 1 /f" ],
+      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 0 /f" ]
+    },
+    {
+      "id": "priv-tips-off",
+      "name": "Disable Windows tips & suggestions",
+      "category": "Privacy",
+      "description": "Silences the 'suggested' content, tips and app promos Windows shows in Start, Settings and notifications.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f" ],
+      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 1 /f" ]
+    },
+    {
+      "id": "priv-edge-preload-off",
+      "name": "Disable Edge startup boost & background",
+      "category": "Privacy",
+      "description": "Stops Microsoft Edge from preloading at boot and lurking in the background when it's closed — frees RAM if Edge isn't your main browser.",
+      "impact": "medium",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v StartupBoostEnabled /t REG_DWORD /d 0 /f",
+        "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v BackgroundModeEnabled /t REG_DWORD /d 0 /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v StartupBoostEnabled /t REG_DWORD /d 1 /f",
+        "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f"
+      ]
+    },
+    {
+      "id": "priv-telemetry-tasks-off",
+      "name": "Disable telemetry scheduled tasks",
+      "category": "Privacy",
+      "description": "Disables the DiagTrack / Customer Experience scheduled tasks that collect and upload usage data in the background.",
+      "impact": "medium",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "schtasks /Change /TN \"\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser\" /Disable 2>$null; schtasks /Change /TN \"\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator\" /Disable 2>$null; schtasks /Change /TN \"\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip\" /Disable 2>$null; 'Telemetry tasks disabled.'"
+      ],
+      "revert": [
+        "schtasks /Change /TN \"\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser\" /Enable 2>$null; schtasks /Change /TN \"\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator\" /Enable 2>$null; schtasks /Change /TN \"\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip\" /Enable 2>$null; 'Telemetry tasks re-enabled.'"
+      ]
+    },
+    {
+      "id": "visual-taskbar-seconds-on",
+      "name": "Show seconds on the taskbar clock",
+      "category": "Visual",
+      "description": "Adds seconds to the system clock in the taskbar. Costs a tiny bit of power but handy for timing things.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 1 /f" ],
+      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 0 /f" ]
     }
   ]
 }
