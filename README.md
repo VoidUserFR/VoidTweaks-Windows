@@ -42,7 +42,7 @@ Most "PC optimizers" are closed boxes: they hide what they change, nag you to pa
 
 ---
 
-## 📸 A look inside
+## 📸 A look inside - V2.6
 
 <div align="center">
 
