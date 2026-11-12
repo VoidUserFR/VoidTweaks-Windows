@@ -4,7 +4,7 @@
 
 # VoidTweaks
 
-*Everything is FREE, so 'd Really Appreciate it if you Helped me out by Giving me a tiny TIP ❤️.*
+*Everything is FREE, so I'd Really Appreciate it if you Helped me out by Giving me a tiny TIP ❤️.*
 *Tips and Other Info in my [guns.lol](https://guns.lol/hunk_) 🫶. Much Love to y'all!*
 
 ### An open, transparent, fully-reversible Windows 11 optimizer.
