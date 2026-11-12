@@ -18,7 +18,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "2.6";
+    public const string Version = "2.7";
     private HashSet<string> _favs = Engine.GetFavorites();
     private string _perfTab = "Power plans";
     private System.Threading.CancellationTokenSource? _stressCts;
@@ -397,6 +397,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ApplyAccent()
     {
+        _accentStatic = _accent;
         try
         {
             var theme = Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme();
@@ -646,7 +647,9 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(14, 0, 0, 0) };
         right.Children.Add(FavStar(tw.Id));
-        right.Children.Add(Pill(state));
+        var (chipTxt, chipCol) = StateChip(state);
+        var chip = StatusChip(chipTxt, chipCol); ((FrameworkElement)chip).Margin = new Thickness(0, 2, 2, 0);
+        right.Children.Add(chip);
         if (toggleable)
         {
             var ts = new Wpf.Ui.Controls.ToggleSwitch { IsChecked = state == "applied", Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
@@ -696,26 +699,37 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         return vb;
     }
 
-    private static Border GlowCard(UIElement child, Color glow)
+    // EXM-style card: flat neutral surface, a thin coloured left accent bar carries the status identity,
+    // and only a soft shadow (no heavy glow). Replaces the old green/red glow.
+    private static Border GlowCard(UIElement child, Color accent)
     {
-        var baseBg = Color.FromArgb(30, 255, 255, 255);
-        var hoverBg = Color.FromArgb(48, 255, 255, 255);
-        var eff = new System.Windows.Media.Effects.DropShadowEffect { Color = glow, BlurRadius = 18, ShadowDepth = 0, Opacity = 0 };
-        var b = new Border
+        var baseBg = CardBg;
+        var hoverBg = CardBgHover;
+        var eff = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, BlurRadius = 16, ShadowDepth = 0, Opacity = 0 };
+        var inner = new Border
         {
             Background = new SolidColorBrush(baseBg),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(150, glow.R, glow.G, glow.B)),
-            BorderThickness = new Thickness(1.3),
+            BorderBrush = new SolidColorBrush(CardBorder),
+            BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(_compact ? 13 : 18),
+            Child = child
+        };
+        // thin colored accent bar on the left edge = the status identity
+        var accentBar = new Border { Width = 4, CornerRadius = new CornerRadius(4, 0, 0, 4), Background = new SolidColorBrush(accent), Margin = new Thickness(0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+        var grid = new Grid();
+        grid.Children.Add(inner);
+        grid.Children.Add(accentBar);
+        var b = new Border
+        {
+            CornerRadius = new CornerRadius(14),
             Margin = new Thickness(0, 0, 0, _compact ? 9 : 13),
-            Child = child,
+            Child = grid,
             Effect = eff
         };
-        // glow eases in so toggling applied/not-applied feels alive instead of snapping
-        b.Loaded += (_, _) => { var a = new System.Windows.Media.Animation.DoubleAnimation(0, 0.5, System.TimeSpan.FromMilliseconds(280)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } }; eff.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, a); };
-        b.MouseEnter += (_, _) => b.Background = new SolidColorBrush(hoverBg);
-        b.MouseLeave += (_, _) => b.Background = new SolidColorBrush(baseBg);
+        b.Loaded += (_, _) => { var a = new System.Windows.Media.Animation.DoubleAnimation(0, 0.4, System.TimeSpan.FromMilliseconds(260)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } }; eff.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, a); };
+        inner.MouseEnter += (_, _) => inner.Background = new SolidColorBrush(hoverBg);
+        inner.MouseLeave += (_, _) => inner.Background = new SolidColorBrush(baseBg);
         return b;
     }
 
@@ -740,14 +754,22 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         var gpuCard = InfoCard("GPU", GpuText.Text);
         TweakList.Items.Add(gpuCard);
 
-        // quick actions
-        var qa = new WrapPanel { Margin = new Thickness(0, 12, 0, 2) };
-        var q1 = Btn("⚡ Boost", () => BoostBtn_Click(this, new RoutedEventArgs())); q1.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; q1.Margin = new Thickness(0, 0, 8, 8);
-        var q2 = Btn("🧹 Clean junk", () => RunCleanupSet(new[] { "clean-temp", "clean-windows-temp", "maint-clear-thumbnails", "maint-clear-store-cache", "maint-empty-recyclebin" }, "Clean junk")); q2.Margin = new Thickness(0, 0, 8, 8);
-        var q3 = Btn("🛡️ Scan", () => Select("Security")); q3.Margin = new Thickness(0, 0, 8, 8);
-        var q4 = Btn("📊 Benchmark", () => Select("Overclock")); q4.Margin = new Thickness(0, 0, 8, 8);
-        qa.Children.Add(q1); qa.Children.Add(q2); qa.Children.Add(q3); qa.Children.Add(q4);
-        TweakList.Items.Add(qa);
+        // quick actions (tidy, uniform EXM row inside a titled card)
+        var qaSec = Section("Quick actions", "");
+        var qa = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
+        void AddQa(string txt, System.Action act, bool primary = false)
+        {
+            var b = Btn(txt, act); b.Height = 40; b.MinWidth = 150; b.Margin = new Thickness(0, 0, 8, 8);
+            if (primary) b.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
+            qa.Children.Add(b);
+        }
+        AddQa("⚡  Boost", () => BoostBtn_Click(this, new RoutedEventArgs()), true);
+        AddQa("🧹  Clean junk", () => RunCleanupSet(new[] { "clean-temp", "clean-windows-temp", "maint-clear-thumbnails", "maint-clear-store-cache", "maint-empty-recyclebin" }, "Clean junk"));
+        AddQa("🛡️  Scan", () => Select("Security"));
+        AddQa("📊  Benchmark", () => Select("Overclock"));
+        AddQa("⚡  Power & Stress", () => Select("Power & Stress"));
+        qaSec.Children.Add(qa);
+        TweakList.Items.Add(Card(qaSec));
 
         _liveHook = () =>
         {
@@ -930,34 +952,42 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private Border PresetCard(Preset p, bool editable)
     {
         var pp = p;
-        var grid = TwoCol();
-        var left = new StackPanel();
-        left.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 15, FontWeight = FontWeights.SemiBold });
-        if (!string.IsNullOrWhiteSpace(p.Description))
-            left.Children.Add(new TextBlock { Text = Loc.S(p.Description), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
+        int ap = p.Apply.Count(id => _cat.Tweaks.FirstOrDefault(t => t.Id == id) is { } t && Engine.State(t) == "applied");
+        bool full = p.Mode != "revert-all" && p.Apply.Count > 0 && ap == p.Apply.Count;
+        var accent = full ? C(0x4C, 0xC3, 0x8A) : _accent;
+
+        var sp = new StackPanel();
+        var head = new Grid();
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        head.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 15.5, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
         if (p.Mode != "revert-all" && p.Apply.Count > 0)
         {
-            int ap = p.Apply.Count(id => _cat.Tweaks.FirstOrDefault(t => t.Id == id) is { } t && Engine.State(t) == "applied");
-            left.Children.Add(new TextBlock { Text = ap == p.Apply.Count ? "● Active — all applied" : $"{ap} / {p.Apply.Count} applied", Foreground = new SolidColorBrush(ap == p.Apply.Count ? C(0x4C, 0xC3, 0x8A) : C(0x9A, 0x9A, 0xA6)), FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
+            var chip = StatusChip(full ? "Active" : (ap > 0 ? $"{ap}/{p.Apply.Count}" : "Inactive"), full ? C(0x4C, 0xC3, 0x8A) : (ap > 0 ? C(0xE5, 0xAA, 0x3D) : C(0x9A, 0x9A, 0xA6)));
+            Grid.SetColumn((FrameworkElement)chip, 1); head.Children.Add(chip);
         }
-        Grid.SetColumn(left, 0); grid.Children.Add(left);
+        sp.Children.Add(head);
+        if (!string.IsNullOrWhiteSpace(p.Description))
+            sp.Children.Add(new TextBlock { Text = Loc.S(p.Description), Opacity = 0.6, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 9, 0, 0), FontSize = 12.5 });
 
-        var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Width = 92, HorizontalAlignment = HorizontalAlignment.Right };
+        var brow = new Grid { Margin = new Thickness(0, 15, 0, 0) };
+        brow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        brow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply →"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, HorizontalAlignment = HorizontalAlignment.Stretch, Height = 38, Margin = new Thickness(0, 0, 8, 0) };
         apply.Click += (_, _) => ApplyPreset(pp);
-        right.Children.Add(apply);
+        Grid.SetColumn(apply, 0); brow.Children.Add(apply);
         if (editable)
         {
-            var erow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-            var ren = new Wpf.Ui.Controls.Button { Content = Loc.S("Rename"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 0) };
+            var erow = new StackPanel { Orientation = Orientation.Horizontal };
+            var ren = new Wpf.Ui.Controls.Button { Content = Loc.S("Rename"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Height = 38, Margin = new Thickness(0, 0, 8, 0) };
             ren.Click += (_, _) => RenamePreset(pp);
-            var del = new Wpf.Ui.Controls.Button { Content = Loc.S("Delete"), Appearance = Wpf.Ui.Controls.ControlAppearance.Danger };
+            var del = new Wpf.Ui.Controls.Button { Content = Loc.S("Delete"), Appearance = Wpf.Ui.Controls.ControlAppearance.Danger, Height = 38 };
             del.Click += (_, _) => DeletePreset(pp);
             erow.Children.Add(ren); erow.Children.Add(del);
-            right.Children.Add(erow);
+            Grid.SetColumn(erow, 1); brow.Children.Add(erow);
         }
-        Grid.SetColumn(right, 1); grid.Children.Add(right);
-        return Card(grid);
+        sp.Children.Add(brow);
+        return GlowCard(sp, accent);
     }
 
     private void SaveCurrentPreset()
@@ -1060,32 +1090,118 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     // ---------------- health ----------------
+    private record HealthCheck(string Title, bool Bad, string Detail, int Penalty);
     private void ShowHealth()
     {
         HeaderTitle.Text = Loc.S("Health check");
-        HeaderSub.Text = Loc.S("Your system, and what's worth looking at");
+        HeaderSub.Text = Loc.S("A live snapshot of your system — scored, with what's worth fixing");
         TweakList.Items.Clear();
+
+        // --- score hero (filled async) ---
+        var hero = new Grid();
+        hero.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        hero.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var ringWrap = new Grid { Width = 92, Height = 92, Margin = new Thickness(0, 0, 20, 0), VerticalAlignment = VerticalAlignment.Center };
+        ringWrap.Children.Add(new System.Windows.Shapes.Ellipse { Width = 92, Height = 92, Stroke = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255)), StrokeThickness = 8 });
+        var arc = new System.Windows.Shapes.Ellipse { Width = 92, Height = 92, Stroke = new SolidColorBrush(C(0x4C, 0xC3, 0x8A)), StrokeThickness = 8, StrokeDashCap = PenLineCap.Round };
+        ringWrap.Children.Add(arc);
+        var scoreTxt = new TextBlock { Text = "…", FontSize = 26, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        ringWrap.Children.Add(scoreTxt);
+        Grid.SetColumn(ringWrap, 0); hero.Children.Add(ringWrap);
+        var heroText = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        var heroTitle = new TextBlock { Text = Loc.S("Analyzing your system…"), FontSize = 18, FontWeight = FontWeights.Bold };
+        var heroSub = new TextBlock { Text = Loc.S("Reading specs, services, startup and protection — no freeze this time 😌"), Opacity = 0.62, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 5, 0, 0) };
+        heroText.Children.Add(heroTitle); heroText.Children.Add(heroSub);
+        Grid.SetColumn(heroText, 1); hero.Children.Add(heroText);
+        TweakList.Items.Add(Card(hero));
+
+        // --- live gauges row ---
+        var row = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+        for (int i = 0; i < 3; i++) row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var cpuCard = LiveGauge("CPU", C(0x8B, 0x7C, 0xF0), out var cpuTxt, out var cpuBar, out var cpuSpark); cpuCard.Margin = new Thickness(0, 0, 10, 0);
+        var ramCard = LiveGauge("MEMORY", C(0x35, 0xB9, 0xAD), out var ramTxt, out var ramBar, out var ramSpark); ramCard.Margin = new Thickness(0, 0, 10, 0);
+        var diskCard = GaugeCard("SYSTEM DISK", out var diskBar, out var diskTxt);
+        int diskPct = (int)System.Math.Max(0, Engine.DiskUsedPercent());
+        diskBar.Value = diskPct; diskTxt.Text = diskPct + "%"; diskBar.Foreground = UsageGrad(diskPct);
+        Grid.SetColumn(cpuCard, 0); Grid.SetColumn(ramCard, 1); Grid.SetColumn(diskCard, 2);
+        row.Children.Add(cpuCard); row.Children.Add(ramCard); row.Children.Add(diskCard);
+        TweakList.Items.Add(row);
+        _liveHook = () =>
+        {
+            cpuBar.Value = _cpuPct; cpuTxt.Text = _cpuPct + "%"; cpuBar.Foreground = UsageGrad(_cpuPct); UpdateSpark(cpuSpark, _cpuHist);
+            ramBar.Value = _ramPct; ramTxt.Text = _ramPct + "%"; ramBar.Foreground = UsageGrad(_ramPct); UpdateSpark(ramSpark, _ramHist);
+        };
+        _liveHook();
+
+        // --- specs (async) ---
         var specs = new StackPanel();
         specs.Children.Add(new TextBlock { Text = Loc.S("Your system"), FontSize = 15, FontWeight = FontWeights.SemiBold });
-        var cpu = Engine.RunOne("(Get-CimInstance Win32_Processor | Select-Object -First 1).Name");
-        var media = Engine.RunOne("(Get-Partition -DriveLetter ($env:SystemDrive[0]) | Get-Disk | Get-PhysicalDisk).MediaType");
-        specs.Children.Add(new TextBlock { Text = $"{cpu}\n{GpuText.Text}  ·  {OsText.Text}\nSystem drive: {media}\n{DiskText.Text}", Opacity = 0.7, Margin = new Thickness(0, 7, 0, 0), FontSize = 12.5 });
+        var specTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.72, Margin = new Thickness(0, 8, 0, 0), FontSize = 12.5, FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 20, TextWrapping = TextWrapping.Wrap };
+        specs.Children.Add(specTxt);
         TweakList.Items.Add(Card(specs));
 
-        void Check(string title, bool bad, string detail) =>
-            TweakList.Items.Add(Card(Row(PillBox(bad ? "Attention" : "OK", bad ? C(0xE5, 0xAA, 0x3D) : C(0x4C, 0xC3, 0x8A)), title, detail)));
+        // --- checks host (async) ---
+        var checksHost = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+        checksHost.Children.Add(new TextBlock { Text = Loc.S("Checks"), FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 2, 0, 8) });
+        var checksLoading = new TextBlock { Text = Loc.S("Running checks…"), Opacity = 0.55, Margin = new Thickness(2, 0, 0, 0), FontSize = 12.5 };
+        checksHost.Children.Add(checksLoading);
+        TweakList.Items.Add(checksHost);
 
-        bool wuBad = _cat.Tweaks.Any(t => (t.Id == "fix-wu-service" || t.Id == "fix-wu-policy") && Engine.IsIssue(t));
-        Check("Windows Update", wuBad, wuBad ? "A service or policy is blocking updates — see Fixes." : "Update services look healthy.");
-        int startupN = Engine.StartupItems().Count(i => i.Enabled);
-        Check("Startup apps", startupN > 8, $"{startupN} apps launch at boot.");
-        bool hdd = media.Equals("HDD", StringComparison.OrdinalIgnoreCase);
-        if (hdd) Check("Hard drive (HDD)", true, "On an HDD, keep SysMain on. An SSD is the biggest speed-up.");
-
-        var rep = Section("Share a system report", "Export a clean HTML page with your specs, active power plan and every applied tweak — great for forums, friends or a before/after record. Nothing personal, nothing leaves your PC unless you share the file.");
-        var rb = Btn("Export system report…", ExportSystemReport); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
-        rep.Children.Add(rb);
+        // --- report export ---
+        var rep = Section("Share a system report", "Export a clean HTML page with your specs, active power plan and every applied tweak — great for forums, friends or a before/after record. Nothing personal leaves your PC unless you share the file.");
+        var repBtn = Btn("Export system report…", ExportSystemReport); repBtn.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
+        rep.Children.Add(repBtn);
         TweakList.Items.Add(Card(rep));
+
+        // --- compute everything off the UI thread ---
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            string specInfo = ""; var facts = new Dictionary<string, string>(); int startupN = 0;
+            try { specInfo = Engine.SpecInfo(); } catch { }
+            try { facts = Engine.HealthFacts(); } catch { }
+            try { startupN = Engine.StartupItems().Count(i => i.Enabled); } catch { }
+
+            bool wuBad = _cat.Tweaks.Any(t => (t.Id == "fix-wu-service" || t.Id == "fix-wu-policy") && Engine.IsIssue(t));
+            int issues = _cat.Tweaks.Count(Engine.IsIssue);
+            int applied = _cat.Tweaks.Count(t => Engine.State(t) == "applied");
+            bool hdd = facts.TryGetValue("media", out var md) && md.Equals("HDD", StringComparison.OrdinalIgnoreCase);
+            bool reboot = facts.TryGetValue("reboot", out var rb) && rb.Equals("True", StringComparison.OrdinalIgnoreCase);
+            bool rtpOff = facts.TryGetValue("rtp", out var rtp) && rtp.Equals("False", StringComparison.OrdinalIgnoreCase);
+            int defAge = facts.TryGetValue("defage", out var da) && int.TryParse(da, out var dai) ? dai : -1;
+            string uptime = facts.TryGetValue("uptime", out var up) ? up : "?";
+
+            var checks = new List<HealthCheck>
+            {
+                new("Windows Update", wuBad, wuBad ? "A service or policy is blocking updates — see Fixes." : "Update services look healthy.", wuBad ? 20 : 0),
+                new("Antivirus protection", rtpOff, rtpOff ? "Real-time protection is OFF. Turn Defender back on unless another AV runs it." : (defAge > 3 ? $"Real-time on, but definitions are {defAge} days old — update them in Security." : "Real-time protection on and up to date."), rtpOff ? 18 : (defAge > 3 ? 8 : 0)),
+                new("Pending reboot", reboot, reboot ? "A restart is pending — some changes won't fully apply until you reboot." : "No restart pending.", reboot ? 8 : 0),
+                new("Startup apps", startupN > 8, $"{startupN} app(s) launch at boot{(startupN > 8 ? " — trim them in Startup." : ".")}", startupN > 12 ? 15 : startupN > 8 ? 10 : 0),
+                new("Recommended tweaks", issues > 0, issues > 0 ? $"{issues} recommended tweak(s) aren't applied yet." : $"{applied} tweak(s) applied, nothing flagged.", issues > 0 ? 10 : 0),
+                new("Memory pressure", _ramPct >= 85, _ramPct >= 85 ? $"RAM at {_ramPct}% — hit ⚡ Boost to free some." : $"RAM at {_ramPct}%, comfortable.", _ramPct >= 85 ? 10 : 0),
+                new("System drive", hdd, hdd ? "On an HDD — keep SysMain on. An SSD is the single biggest speed-up." : "SSD / fast storage detected.", hdd ? 10 : 0),
+            };
+            int score = System.Math.Clamp(100 - checks.Sum(c => c.Penalty), 0, 100);
+            Color sc = score >= 80 ? C(0x4C, 0xC3, 0x8A) : score >= 55 ? C(0xE5, 0xAA, 0x3D) : C(0xEF, 0x6A, 0x60);
+            string verdict = score >= 90 ? "Excellent shape" : score >= 80 ? "Looking healthy" : score >= 55 ? "A few things to tidy" : "Needs attention";
+
+            Dispatcher.Invoke(() =>
+            {
+                specTxt.Text = (string.IsNullOrWhiteSpace(specInfo) ? "(could not read specs)" : specInfo) + $"\nUptime: {uptime}";
+                scoreTxt.Text = score.ToString();
+                scoreTxt.Foreground = new SolidColorBrush(sc);
+                arc.Stroke = new SolidColorBrush(sc);
+                // dash to represent score as an arc (circumference ~ π*92 ≈ 289)
+                double circ = System.Math.PI * 92;
+                arc.StrokeDashArray = new DoubleCollection { circ / 8 * (score / 100.0), 999 };
+                arc.RenderTransform = new RotateTransform(-90, 46, 46);
+                heroTitle.Text = verdict;
+                int bad = checks.Count(c => c.Bad);
+                heroSub.Text = bad == 0 ? Loc.S("All checks passed — nice and clean. ✨") : $"{bad} " + Loc.S("of") + $" {checks.Count} " + Loc.S("checks want a look. Score") + $": {score}/100";
+                checksHost.Children.Remove(checksLoading);
+                foreach (var c in checks.OrderByDescending(x => x.Bad).ThenByDescending(x => x.Penalty))
+                    checksHost.Children.Add(Row(PillBox(c.Bad ? "Attention" : "OK", c.Bad ? C(0xE5, 0xAA, 0x3D) : C(0x4C, 0xC3, 0x8A)), Loc.S(c.Title), Loc.S(c.Detail)));
+            });
+        });
     }
 
     private void ExportSystemReport()
@@ -1117,11 +1233,16 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private static Border WrapCard(UIElement e) => Card(e);
 
     // ---------------- settings ----------------
+    private static Color _accentStatic = Color.FromRgb(0x8B, 0x7C, 0xF0);
     private static StackPanel Section(string title, string desc)
     {
         var sp = new StackPanel();
-        sp.Children.Add(new TextBlock { Text = Loc.S(title), FontSize = 15, FontWeight = FontWeights.SemiBold });
-        sp.Children.Add(new TextBlock { Text = Loc.S(desc), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 10), FontSize = 12.5 });
+        var head = new StackPanel { Orientation = Orientation.Horizontal };
+        head.Children.Add(new Border { Width = 3, Height = 15, CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(_accentStatic), Margin = new Thickness(0, 0, 9, 0), VerticalAlignment = VerticalAlignment.Center });
+        head.Children.Add(new TextBlock { Text = Loc.S(title), FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
+        sp.Children.Add(head);
+        if (!string.IsNullOrWhiteSpace(desc))
+            sp.Children.Add(new TextBlock { Text = Loc.S(desc), Opacity = 0.6, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 6, 0, 10), FontSize = 12.5 });
         return sp;
     }
     private static Wpf.Ui.Controls.Button Btn(string text, System.Action onClick)
@@ -1342,19 +1463,24 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     // ---------------- game profiles ----------------
-    private record GameProfile(string Name, string Blurb, string[] Ids);
+    private record GameProfile(string Name, string Blurb, string[] Ids, (string label, int pips)[] Metrics);
     private static readonly GameProfile[] GameProfiles =
     {
         new("Competitive FPS", "Valorant · CS2 · Apex · Fortnite — lowest input lag & latency.",
-            new[] { "game-mode-on", "game-dvr-off", "game-gpu-scheduling", "game-mouse-accel-off", "game-system-responsiveness", "game-games-task", "perf-power-throttling-off", "perf-high-power-plan", "net-nagle-off", "net-throttling-off", "adv-gpu-msi-mode", "visual-animations-off" }),
+            new[] { "game-mode-on", "game-dvr-off", "game-gpu-scheduling", "game-mouse-accel-off", "game-system-responsiveness", "game-games-task", "perf-power-throttling-off", "perf-high-power-plan", "net-nagle-off", "net-throttling-off", "adv-gpu-msi-mode", "visual-animations-off" },
+            new (string, int)[] { ("Low input lag", 5), ("FPS", 4), ("Network", 4), ("Stability", 3) }),
         new("AAA / Open‑world", "Cyberpunk · GTA · Elden Ring — max GPU & CPU headroom.",
-            new[] { "game-mode-on", "game-dvr-off", "game-gpu-scheduling", "game-system-responsiveness", "perf-ultimate-power", "perf-power-throttling-off", "visual-best-performance" }),
+            new[] { "game-mode-on", "game-dvr-off", "game-gpu-scheduling", "game-system-responsiveness", "perf-ultimate-power", "perf-power-throttling-off", "visual-best-performance" },
+            new (string, int)[] { ("Low input lag", 3), ("FPS", 5), ("Network", 2), ("Stability", 4) }),
         new("Online multiplayer", "Warzone · LoL · Dota · Rocket League — network‑tuned.",
-            new[] { "game-mode-on", "game-dvr-off", "game-system-responsiveness", "perf-high-power-plan", "net-nagle-off", "net-throttling-off", "net-autotuning-off", "net-rsc-off", "net-ecn-off", "net-heuristics-off", "net-dns-cloudflare" }),
+            new[] { "game-mode-on", "game-dvr-off", "game-system-responsiveness", "perf-high-power-plan", "net-nagle-off", "net-throttling-off", "net-autotuning-off", "net-rsc-off", "net-ecn-off", "net-heuristics-off", "net-dns-cloudflare" },
+            new (string, int)[] { ("Low input lag", 4), ("FPS", 3), ("Network", 5), ("Stability", 4) }),
         new("Streaming + gaming", "OBS while you play — stability over raw latency.",
-            new[] { "game-mode-on", "game-gpu-scheduling", "perf-high-power-plan", "perf-power-throttling-off", "visual-transparency-off" }),
+            new[] { "game-mode-on", "game-gpu-scheduling", "perf-high-power-plan", "perf-power-throttling-off", "visual-transparency-off" },
+            new (string, int)[] { ("Low input lag", 3), ("FPS", 3), ("Network", 3), ("Stability", 5) }),
         new("Low‑end / Old PC", "Strip the eye‑candy for more FPS on weak hardware.",
-            new[] { "game-mode-on", "perf-power-throttling-off", "visual-best-performance", "visual-transparency-off", "visual-animations-off", "visual-menu-delay" }),
+            new[] { "game-mode-on", "perf-power-throttling-off", "visual-best-performance", "visual-transparency-off", "visual-animations-off", "visual-menu-delay" },
+            new (string, int)[] { ("Low input lag", 4), ("FPS", 5), ("Network", 2), ("Stability", 3) }),
     };
 
     private void ApplyProfile(GameProfile p, bool revert)
@@ -1374,32 +1500,40 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             int total = p.Ids.Count(id => _cat.Tweaks.Any(t => t.Id == id));
             int have = p.Ids.Count(id => _cat.Tweaks.FirstOrDefault(t => t.Id == id) is { } t && Engine.State(t) == "applied");
             bool full = total > 0 && have == total;
+            var accent = full ? C(0x4C, 0xC3, 0x8A) : C(0xEF, 0x6A, 0x60);
 
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
+            var sp = new StackPanel();
+            // header: icon + title, status chip top-right
+            var head = new Grid();
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var cc = C(0xEF, 0x6A, 0x60);
-            var tile = new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(Color.FromArgb(38, cc.R, cc.G, cc.B)), Margin = new Thickness(0, 1, 16, 0), VerticalAlignment = VerticalAlignment.Top, Child = IconFor("Gaming", 24) };
-            Grid.SetColumn(tile, 0); grid.Children.Add(tile);
-
-            var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            left.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 16.5, FontWeight = FontWeights.SemiBold });
-            left.Children.Add(new TextBlock { Text = Loc.S(p.Blurb), Opacity = 0.62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 7, 14, 0), FontSize = 12.5 });
-            left.Children.Add(new TextBlock { Text = full ? $"● Active — all {total} applied" : $"{have} / {total} applied", Foreground = new SolidColorBrush(full ? C(0x4C, 0xC3, 0x8A) : C(0x9A, 0x9A, 0xA6)), FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 9, 0, 0) });
-            Grid.SetColumn(left, 1); grid.Children.Add(left);
-
-            var right = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
-            var apply = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Success, Width = 94 };
-            if (!IsAdmin()) { apply.ToolTip = Loc.S("Some tweaks need administrator"); }
+            var tile = new Border { Width = 42, Height = 42, CornerRadius = new CornerRadius(11), Background = new SolidColorBrush(Color.FromArgb(38, cc.R, cc.G, cc.B)), Margin = new Thickness(0, 0, 13, 0), VerticalAlignment = VerticalAlignment.Center, Child = IconFor("Gaming", 22) };
+            Grid.SetColumn(tile, 0); head.Children.Add(tile);
+            var titleStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            titleStack.Children.Add(new TextBlock { Text = Loc.S(p.Name), FontSize = 16, FontWeight = FontWeights.Bold });
+            Grid.SetColumn(titleStack, 1); head.Children.Add(titleStack);
+            var chip = StatusChip(full ? "Active" : (have > 0 ? $"{have}/{total}" : "Inactive"), full ? C(0x4C, 0xC3, 0x8A) : (have > 0 ? C(0xE5, 0xAA, 0x3D) : C(0x9A, 0x9A, 0xA6)));
+            ((FrameworkElement)chip).VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(chip, 2); head.Children.Add(chip);
+            sp.Children.Add(head);
+            sp.Children.Add(new TextBlock { Text = Loc.S(p.Blurb), Opacity = 0.6, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 10, 0, 14) });
+            foreach (var (label, pips) in p.Metrics) sp.Children.Add(PipRow(label, pips, C(0xEF, 0x6A, 0x60)));
+            // button row
+            var brow = new Grid { Margin = new Thickness(0, 16, 0, 0) };
+            brow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            brow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var apply = new Wpf.Ui.Controls.Button { Content = Loc.S(full ? "Re‑apply" : "Apply →"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, HorizontalAlignment = HorizontalAlignment.Stretch, Height = 38, Margin = new Thickness(0, 0, 8, 0) };
+            if (!IsAdmin()) apply.ToolTip = Loc.S("Some tweaks need administrator");
             apply.Click += (_, _) => ApplyProfile(p, false);
-            var rev = new Wpf.Ui.Controls.Button { Content = Loc.S("Revert"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 94, Margin = new Thickness(0, 8, 0, 0) };
+            Grid.SetColumn(apply, 0); brow.Children.Add(apply);
+            var rev = new Wpf.Ui.Controls.Button { Content = Loc.S("Revert"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 100, Height = 38 };
             rev.Click += (_, _) => ApplyProfile(p, true);
-            right.Children.Add(apply); right.Children.Add(rev);
-            Grid.SetColumn(right, 2); grid.Children.Add(right);
+            Grid.SetColumn(rev, 1); brow.Children.Add(rev);
+            sp.Children.Add(brow);
 
-            TweakList.Items.Add(GlowCard(grid, full ? C(0x4C, 0xC3, 0x8A) : C(0x6A, 0x6A, 0x77)));
+            TweakList.Items.Add(GlowCard(sp, accent));
         }
     }
 
@@ -1772,6 +1906,30 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         var rb = Btn("Open System Restore", () => Engine.OpenRestoreUi()); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
         roll.Children.Add(rb);
         TweakList.Items.Add(Card(roll));
+
+        var del = Section("Free up space", "Restore points can eat several GB. Delete the oldest to reclaim space while keeping a recent safety net, or clear them all. This cannot be undone.");
+        var drow = new WrapPanel();
+        var dOld = Btn("Delete oldest point", () => ConfirmDeleteRestore(false)); dOld.Margin = new Thickness(0, 0, 8, 0);
+        var dAll = Btn("Delete ALL points", () => ConfirmDeleteRestore(true)); dAll.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
+        if (!IsAdmin()) { dOld.IsEnabled = dAll.IsEnabled = false; dOld.ToolTip = dAll.ToolTip = Loc.S("Needs administrator"); }
+        drow.Children.Add(dOld); drow.Children.Add(dAll);
+        del.Children.Add(drow);
+        TweakList.Items.Add(Card(del));
+    }
+
+    private void ConfirmDeleteRestore(bool all)
+    {
+        var msg = all
+            ? Loc.S("Permanently delete ALL restore points on this PC? You won't be able to roll back to any of them. This cannot be undone.")
+            : Loc.S("Permanently delete the OLDEST restore point? This cannot be undone.");
+        if (System.Windows.MessageBox.Show(this, msg, Loc.S("VoidTweaks — Delete restore points"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) != System.Windows.MessageBoxResult.Yes) return;
+        Log(all ? "=== delete all restore points ===" : "=== delete oldest restore point ===");
+        SetBusy(true);
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var r = all ? Engine.DeleteAllRestorePoints() : Engine.DeleteOldestRestorePoint();
+            Dispatcher.Invoke(() => { Log(r); SetBusy(false); ShowToast(Loc.S("Done") + " ✓"); if (_sel == "Restore") ShowRestore(); });
+        });
     }
 
     // ---------------- shared ----------------
@@ -1782,22 +1940,43 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         return grid;
     }
+    // EXM-style surface tokens (kept theme-adaptive via white overlays)
+    private static readonly Color CardBg = Color.FromArgb(20, 255, 255, 255);
+    private static readonly Color CardBgHover = Color.FromArgb(32, 255, 255, 255);
+    private static readonly Color CardBorder = Color.FromArgb(28, 255, 255, 255);
     private static Border Card(UIElement child)
     {
         var b = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255)),
+            Background = new SolidColorBrush(CardBg),
+            BorderBrush = new SolidColorBrush(CardBorder),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(12),
-            Padding = new Thickness(_compact ? 11 : 16),
-            Margin = new Thickness(0, 0, 0, _compact ? 7 : 10),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(_compact ? 13 : 18),
+            Margin = new Thickness(0, 0, 0, _compact ? 8 : 12),
             Child = child
         };
-        b.MouseEnter += (_, _) => b.Background = new SolidColorBrush(Color.FromArgb(42, 255, 255, 255));
-        b.MouseLeave += (_, _) => b.Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255));
+        b.MouseEnter += (_, _) => b.Background = new SolidColorBrush(CardBgHover);
+        b.MouseLeave += (_, _) => b.Background = new SolidColorBrush(CardBg);
         return b;
     }
+
+    // small status chip: coloured text + dot, sits top-right of a card header (EXM look)
+    private static FrameworkElement StatusChip(string text, Color c)
+    {
+        var sp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+        sp.Children.Add(new TextBlock { Text = Loc.S(text), Foreground = new SolidColorBrush(c), FontSize = 11.5, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+        sp.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Background = new SolidColorBrush(c), VerticalAlignment = VerticalAlignment.Center });
+        return sp;
+    }
+    private static (string txt, Color c) StateChip(string state) => state switch
+    {
+        "applied" => ("Applied", C(0x4C, 0xC3, 0x8A)),
+        "custom" => ("Custom", C(0xE5, 0xAA, 0x3D)),
+        "default" => ("Not applied", C(0x9A, 0x9A, 0xA6)),
+        "action" => ("One-time", C(0x5B, 0x9B, 0xFF)),
+        _ => ("Ready", C(0x9A, 0x9A, 0xA6))
+    };
     private static Border Badge(string text, Color c) => new()
     {
         Background = new SolidColorBrush(Color.FromArgb(34, c.R, c.G, c.B)),

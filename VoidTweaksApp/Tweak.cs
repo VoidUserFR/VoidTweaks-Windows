@@ -419,12 +419,13 @@ public static class Engine
         var cmds = new List<string>();
         if (kind == "desktop")
         {
-            cmds.Add("$u='e9a42b02-d5df-448d-aa00-03f14749eb61'; if(-not (powercfg -list | Select-String $u)){ powercfg -duplicatescheme $u | Out-Null }; powercfg -setactive $u 2>$null; if($LASTEXITCODE){ powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c }; 'Activated max-performance power plan.'");
+            // Create (or reuse) our own branded "VoidTweaks Max Performance" scheme from the Ultimate/High-Performance template.
+            cmds.Add("$name='VoidTweaks Max Performance'; $ex=(powercfg -list | Select-String ([regex]::Escape($name))); if($ex){ $g=([regex]'[0-9a-fA-F-]{36}').Match($ex.ToString()).Value } else { $d=(powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null); $g=([regex]'[0-9a-fA-F-]{36}').Match([string]$d).Value; if(-not $g){ $d=(powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c); $g=([regex]'[0-9a-fA-F-]{36}').Match([string]$d).Value }; powercfg -changename $g $name 'VoidTweaks maximum-performance profile' }; powercfg -setactive $g; \"Activated '$name'.\"");
             cmds.Add("powercfg -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100 2>$null; powercfg -setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null; powercfg -change -standby-timeout-ac 0 2>$null; powercfg -change -monitor-timeout-ac 0 2>$null; powercfg -setactive SCHEME_CURRENT; 'Tuned for desktop: 100% min CPU, USB suspend off, no sleep on AC.'");
         }
         else if (kind == "laptop")
         {
-            cmds.Add("powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e; 'Activated Balanced plan (laptop-friendly).'");
+            cmds.Add("$name='VoidTweaks Balanced'; $ex=(powercfg -list | Select-String ([regex]::Escape($name))); if($ex){ $g=([regex]'[0-9a-fA-F-]{36}').Match($ex.ToString()).Value } else { $d=(powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e); $g=([regex]'[0-9a-fA-F-]{36}').Match([string]$d).Value; powercfg -changename $g $name 'VoidTweaks battery-friendly profile' }; powercfg -setactive $g; \"Activated '$name'.\"");
             cmds.Add("powercfg -setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5 2>$null; powercfg -setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 10 2>$null; powercfg -setdcvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 2>$null; powercfg -change -monitor-timeout-dc 5 2>$null; powercfg -change -standby-timeout-dc 15 2>$null; powercfg -setactive SCHEME_CURRENT; 'Tuned for laptop: low min CPU on battery, USB suspend on, screen sleeps to save power.'");
         }
         else
@@ -479,6 +480,34 @@ public static class Engine
     public static string CreateRestorePointNamed()
         => RunOne("try { Enable-ComputerRestore -Drive \"$env:SystemDrive\\\" -ErrorAction SilentlyContinue; Checkpoint-Computer -Description ('VoidTweaks ' + (Get-Date -Format 'MMM d HH:mm')) -RestorePointType MODIFY_SETTINGS -ErrorAction Stop; 'Restore point created.' } catch { 'Could not create restore point (needs admin, and max 1 per ~24h by default): ' + $_.Exception.Message }");
     public static void OpenRestoreUi() { try { Process.Start(new ProcessStartInfo("rstrui.exe") { UseShellExecute = true }); } catch { } }
+    public static int RestorePointCount()
+    {
+        var o = RunOne("try { @(Get-ComputerRestorePoint -ErrorAction Stop).Count } catch { 0 }");
+        return int.TryParse(o.Trim(), out var n) ? n : 0;
+    }
+    public static string DeleteAllRestorePoints()
+        => RunOne("try { vssadmin delete shadows /all /quiet | Out-Null; 'All restore points deleted.' } catch { 'Could not delete (needs admin): ' + $_.Exception.Message }");
+    public static string DeleteOldestRestorePoint()
+        => RunOne("try { vssadmin delete shadows /for=$env:SystemDrive /oldest /quiet | Out-Null; 'Oldest restore point deleted.' } catch { 'Could not delete (needs admin, or only one point left): ' + $_.Exception.Message }");
+
+    // ---- health snapshot (one PowerShell spawn, parsed into key=value lines) ----
+    public static Dictionary<string, string> HealthFacts()
+    {
+        var s = "$o=@(); "
+            + "try{ $u=(Get-Date)-(Get-CimInstance Win32_OperatingSystem).LastBootUpTime; $o+=('uptime=' + [int]$u.TotalDays + 'd ' + $u.Hours + 'h ' + $u.Minutes + 'm') }catch{ $o+='uptime=?' }; "
+            + "try{ $pr = (Test-Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Component Based Servicing\\RebootPending') -or (Test-Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\RebootRequired'); $o+=('reboot=' + [bool]$pr) }catch{ $o+='reboot=False' }; "
+            + "try{ $d=Get-MpComputerStatus -ErrorAction Stop; $o+=('rtp=' + $d.RealTimeProtectionEnabled); $o+=('defage=' + [int]$d.AntivirusSignatureAge) }catch{ $o+='rtp=unknown'; $o+='defage=-1' }; "
+            + "try{ $m=(Get-Partition -DriveLetter ($env:SystemDrive[0]) | Get-Disk | Get-PhysicalDisk).MediaType; $o+=('media=' + $m) }catch{ $o+='media=?' }; "
+            + "$o -join \"`n\"";
+        var raw = RunOne(s);
+        var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in raw.Split('\n'))
+        {
+            var i = line.IndexOf('=');
+            if (i > 0) d[line.Substring(0, i).Trim()] = line.Substring(i + 1).Trim();
+        }
+        return d;
+    }
 
     // ---- system report (shareable HTML) ----
     public static string SystemReportHtml(string path, IEnumerable<(string name, string state, string cat)> tweaks, IEnumerable<string> favorites)
