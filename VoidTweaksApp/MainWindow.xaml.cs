@@ -18,13 +18,16 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "2.4";
+    public const string Version = "2.5";
     private System.Windows.Forms.NotifyIcon? _tray;
     private string? _firstResult;
     private readonly Dictionary<string, (int total, int applied)> _catStats = new();
     private List<string> _undo = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
+    private readonly List<double> _cpuHist = new();
+    private readonly List<double> _ramHist = new();
+    private int _tick;
     private System.Action? _liveHook;
     private DiscordRpc? _rpc;
     private string _appCat = "Browsers";
@@ -91,6 +94,13 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         timer.Start();
         Log($"VoidTweaks (C# / WPF-UI Fluent) — {_cat.Tweaks.Count} tweaks loaded.");
         SearchBox.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter && !string.IsNullOrWhiteSpace(_search) && _firstResult != null) Select(_firstResult); };
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.K && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0)
+            { try { SearchBox.Focus(); SearchBox.SelectAll(); } catch { } e.Handled = true; }
+            else if (e.Key == System.Windows.Input.Key.Escape && !string.IsNullOrEmpty(_search))
+            { try { SearchBox.Text = ""; } catch { } e.Handled = true; }
+        };
         InitTray();
         RestoreWindowBounds();
         Closing += (_, _) => SaveWindowBounds();
@@ -313,7 +323,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             UndoBtn.Content = Loc.T("btn.undo", "Undo last");
             RestoreCheck.Content = Loc.T("chk.restore", "Restore point first");
             DryCheck.Content = Loc.T("chk.dry", "Dry run");
-            SearchBox.PlaceholderText = Loc.T("ui.search", "Search tweaks…");
+            SearchBox.PlaceholderText = Loc.T("ui.search", "Search tweaks…") + "   Ctrl+K";
         }
         catch { }
     }
@@ -685,17 +695,31 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         var row = new Grid { Margin = new Thickness(0, 0, 0, 2) };
         for (int i = 0; i < 3; i++) row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var cpuCard = GaugeCard("CPU", out var cpuBar, out var cpuTxt); cpuCard.Margin = new Thickness(0, 0, 10, 0);
-        var ramCard = GaugeCard("MEMORY", out var ramBar, out var ramTxt); ramCard.Margin = new Thickness(0, 0, 10, 0);
-        var gpuCard = InfoCard("GPU", GpuText.Text);
-        Grid.SetColumn(cpuCard, 0); Grid.SetColumn(ramCard, 1); Grid.SetColumn(gpuCard, 2);
-        row.Children.Add(cpuCard); row.Children.Add(ramCard); row.Children.Add(gpuCard);
+        var cpuCard = LiveGauge("CPU", C(0x8B, 0x7C, 0xF0), out var cpuTxt, out var cpuBar, out var cpuSpark); cpuCard.Margin = new Thickness(0, 0, 10, 0);
+        var ramCard = LiveGauge("MEMORY", C(0x35, 0xB9, 0xAD), out var ramTxt, out var ramBar, out var ramSpark); ramCard.Margin = new Thickness(0, 0, 10, 0);
+        var diskCard = GaugeCard("SYSTEM DISK", out var diskBar, out var diskTxt);
+        int diskPct = (int)System.Math.Max(0, Engine.DiskUsedPercent());
+        diskBar.Value = diskPct; diskTxt.Text = diskPct + "%"; diskBar.Foreground = UsageGrad(diskPct);
+        Grid.SetColumn(cpuCard, 0); Grid.SetColumn(ramCard, 1); Grid.SetColumn(diskCard, 2);
+        row.Children.Add(cpuCard); row.Children.Add(ramCard); row.Children.Add(diskCard);
         TweakList.Items.Add(row);
+
+        var gpuCard = InfoCard("GPU", GpuText.Text);
+        TweakList.Items.Add(gpuCard);
+
+        // quick actions
+        var qa = new WrapPanel { Margin = new Thickness(0, 12, 0, 2) };
+        var q1 = Btn("⚡ Boost", () => BoostBtn_Click(this, new RoutedEventArgs())); q1.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; q1.Margin = new Thickness(0, 0, 8, 8);
+        var q2 = Btn("🧹 Clean junk", () => RunCleanupSet(new[] { "clean-temp", "clean-windows-temp", "maint-clear-thumbnails", "maint-clear-store-cache", "maint-empty-recyclebin" }, "Clean junk")); q2.Margin = new Thickness(0, 0, 8, 8);
+        var q3 = Btn("🛡️ Scan", () => Select("Security")); q3.Margin = new Thickness(0, 0, 8, 8);
+        var q4 = Btn("📊 Benchmark", () => Select("Overclock")); q4.Margin = new Thickness(0, 0, 8, 8);
+        qa.Children.Add(q1); qa.Children.Add(q2); qa.Children.Add(q3); qa.Children.Add(q4);
+        TweakList.Items.Add(qa);
 
         _liveHook = () =>
         {
-            cpuBar.Value = _cpuPct; cpuTxt.Text = _cpuPct + "%"; cpuBar.Foreground = UsageGrad(_cpuPct);
-            ramBar.Value = _ramPct; ramTxt.Text = _ramPct + "%"; ramBar.Foreground = UsageGrad(_ramPct);
+            cpuBar.Value = _cpuPct; cpuTxt.Text = _cpuPct + "%"; cpuBar.Foreground = UsageGrad(_cpuPct); UpdateSpark(cpuSpark, _cpuHist);
+            ramBar.Value = _ramPct; ramTxt.Text = _ramPct + "%"; ramBar.Foreground = UsageGrad(_ramPct); UpdateSpark(ramSpark, _ramHist);
         };
         _liveHook();
 
@@ -747,6 +771,17 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         sp.Children.Add(val);
         bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 10, Value = 0 };
         sp.Children.Add(bar);
+        return Card(sp);
+    }
+    private Border LiveGauge(string label, Color col, out TextBlock val, out ProgressBar bar, out Polyline spark)
+    {
+        var sp = new StackPanel();
+        sp.Children.Add(new TextBlock { Text = label, FontSize = 11, FontWeight = FontWeights.SemiBold, Opacity = 0.55 });
+        val = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 3, 0, 8) };
+        sp.Children.Add(val);
+        bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 7, Value = 0 };
+        sp.Children.Add(bar);
+        sp.Children.Add(Sparkline(out spark, col));
         return Card(sp);
     }
     private static Border InfoCard(string label, string value)
@@ -1174,6 +1209,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         sp.Children.Add(specTxt);
         TweakList.Items.Add(Card(sp));
 
+        // live GPU monitor (NVIDIA)
+        var gl = Section("Live GPU  (NVIDIA)", "Real-time temperature, usage, clocks and power — handy while you tune in Afterburner.");
+        var glTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.88, FontSize = 13.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 22 };
+        gl.Children.Add(glTxt);
+        TweakList.Items.Add(Card(gl));
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var first = Engine.GpuLive();
+            Dispatcher.Invoke(() =>
+            {
+                if (string.IsNullOrWhiteSpace(first)) { glTxt.Text = Loc.S("No NVIDIA GPU detected (nvidia-smi not available)."); return; }
+                glTxt.Text = FormatGpu(first);
+                _liveHook = () =>
+                {
+                    if (_tick % 2 != 0) return;
+                    System.Threading.Tasks.Task.Run(() => { var g = Engine.GpuLive(); if (!string.IsNullOrWhiteSpace(g)) Dispatcher.Invoke(() => glTxt.Text = FormatGpu(g)); });
+                };
+            });
+        });
+
         var bench = Section("Benchmark", "Read‑only: times CPU math, a RAM copy and a disk write/read. Run it before and after tuning to compare.");
         var benchTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
         var rb = Btn("Run benchmark", () => RunAsync(Engine.Benchmark, benchTxt)); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
@@ -1212,6 +1267,19 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 adviceHost.Children.Add(Card(adv));
             });
         });
+    }
+
+    private static string FormatGpu(string csv)
+    {
+        try
+        {
+            var p = csv.Split(',').Select(x => x.Trim()).ToArray();
+            if (p.Length < 6) return csv;
+            return $"🌡  Temp   {p[1]} °C          ⚙  Usage  {p[0]} %\n"
+                 + $"🧮  Core   {p[2]} MHz        🎛  Mem    {p[3]} MHz\n"
+                 + $"🔌  Power  {p[4]} W           🌀  Fan    {p[5]} %";
+        }
+        catch { return csv; }
     }
 
     private void InstallTool(string id, string name)
@@ -1615,7 +1683,29 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         }
         catch { }
         try { _cpuPct = Cpu(); CpuText.Text = _cpuPct + "%"; } catch { }
+        try
+        {
+            _tick++;
+            _cpuHist.Add(_cpuPct); _ramHist.Add(_ramPct);
+            while (_cpuHist.Count > 48) _cpuHist.RemoveAt(0);
+            while (_ramHist.Count > 48) _ramHist.RemoveAt(0);
+        }
+        catch { }
         try { _liveHook?.Invoke(); } catch { }
+    }
+
+    private static Viewbox Sparkline(out Polyline line, Color col)
+    {
+        line = new Polyline { Stroke = new SolidColorBrush(col), StrokeThickness = 2, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
+        return new Viewbox { Height = 44, Stretch = Stretch.Fill, HorizontalAlignment = HorizontalAlignment.Stretch, Child = line, Margin = new Thickness(0, 10, 0, 0) };
+    }
+    private static void UpdateSpark(Polyline p, List<double> data)
+    {
+        var pts = new PointCollection();
+        int n = data.Count;
+        if (n < 2) { p.Points = pts; return; }
+        for (int i = 0; i < n; i++) pts.Add(new Point(i * 100.0 / (n - 1), 30 - System.Math.Clamp(data[i], 0, 100) / 100.0 * 28 - 1));
+        p.Points = pts;
     }
     private static LinearGradientBrush Grad(string a, string b)
     {

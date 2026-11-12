@@ -306,6 +306,18 @@ public static class Engine
     public static string DnsBench() => File.Exists(ActionsPath) ? RunOne($". '{ActionsPath}'; Invoke-DnsBenchmark") : "Actions file missing.";
     public static string Benchmark() => File.Exists(ActionsPath) ? RunOne($". '{ActionsPath}'; Invoke-QuickBenchmark") : "Actions file missing.";
 
+    // Live NVIDIA GPU stats via nvidia-smi. Returns "util,temp,coreMHz,memMHz,powerW,fan" or "" if unavailable.
+    public static string GpuLive()
+    {
+        var s = "& nvidia-smi --query-gpu=utilization.gpu,temperature.gpu,clocks.current.graphics,clocks.current.memory,power.draw,fan.speed --format=csv,noheader,nounits 2>$null";
+        var o = RunOne(s);
+        return (o ?? "").Trim();
+    }
+    public static double DiskUsedPercent()
+    {
+        try { var d = new DriveInfo(Path.GetPathRoot(System.Environment.SystemDirectory)!); return 100.0 * (d.TotalSize - d.AvailableFreeSpace) / d.TotalSize; } catch { return -1; }
+    }
+
     // ---- Windows Defender (built-in) deep scanning ----
     public static string DefenderUpdate() => RunOne("try { Update-MpSignature -ErrorAction Stop; 'Virus definitions updated to the latest.' } catch { 'Could not update definitions (need internet / admin): ' + $_.Exception.Message }");
     public static string DefenderScan(string kind)
