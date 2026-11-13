@@ -1787,11 +1787,29 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             });
         });
 
-        var bench = Section("Benchmark", "Read‑only: times CPU math, a RAM copy and a disk write/read. Run it before and after tuning to compare.");
+        var bench = Section("Benchmark", "Read‑only: times CPU math, a RAM copy and a disk write/read. Runs are saved so you can compare before and after tuning.");
         var benchTxt = new TextBlock { Text = Loc.S(""), Opacity = 0.82, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 11, 0, 0), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
-        var rb = Btn("Run benchmark", () => RunAsync(Engine.Benchmark, benchTxt)); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
-        bench.Children.Add(rb); bench.Children.Add(benchTxt);
+        var benchHist = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
+        void RefreshBenchHist()
+        {
+            benchHist.Children.Clear();
+            var rows = Engine.ReadBenchmarks(8);
+            if (rows.Count == 0) return;
+            benchHist.Children.Add(new TextBlock { Text = Loc.S("Past runs"), FontWeight = FontWeights.SemiBold, FontSize = 12.5, Margin = new Thickness(0, 2, 0, 6) });
+            foreach (var r in rows) benchHist.Children.Add(new TextBlock { Text = r, Opacity = 0.6, FontSize = 11, FontFamily = new FontFamily("Cascadia Mono, Consolas"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 4) });
+            var clr = Btn("Clear benchmark history", () => { Engine.ClearBenchmarks(); RefreshBenchHist(); });
+            clr.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary; clr.Margin = new Thickness(0, 8, 0, 0);
+            benchHist.Children.Add(clr);
+        }
+        var rb = Btn("Run benchmark", () =>
+        {
+            benchTxt.Text = Loc.S("Running…");
+            System.Threading.Tasks.Task.Run(() => { var r = Engine.Benchmark(); Engine.RecordBenchmark(r); Dispatcher.Invoke(() => { benchTxt.Text = r; RefreshBenchHist(); }); });
+        });
+        rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary;
+        bench.Children.Add(rb); bench.Children.Add(benchTxt); bench.Children.Add(benchHist);
         TweakList.Items.Add(Card(bench));
+        RefreshBenchHist();
 
         // spec-aware advice (filled once specs arrive)
         var adviceHost = new StackPanel();
@@ -1906,6 +1924,22 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 tools.Children.Add(hw);
                 adv.Children.Add(tools);
                 adviceHost.Children.Add(Card(adv));
+
+                // per-vendor cheat sheet (entry key + where XMP/EXPO and ReBAR live)
+                string board = (Get("board", "") + " " + Get("vendor", "")).ToUpperInvariant();
+                (string name, string key, string path) v =
+                    board.Contains("ASUS") || board.Contains("ASUSTEK") ? ("ASUS / ROG", "Del (or F2) at boot", "Press F7 for Advanced Mode → 'Ai Tweaker' → 'Ai Overclock Tuner' = XMP I / EXPO. Re-Size BAR: 'Advanced → PCI Subsystem Settings → Re-Size BAR Support' + 'Above 4G Decoding'.")
+                  : board.Contains("MSI") ? ("MSI", "Del at boot", "Open the 'OC' menu (F7 toggles Advanced) → 'Extreme Memory Profile (XMP)' / 'A-XMP' = Enabled. ReBAR: 'Settings → Advanced → PCI Subsystem → Above 4G + Re-Size BAR'.")
+                  : board.Contains("GIGABYTE") || board.Contains("AORUS") ? ("Gigabyte / AORUS", "Del at boot", "'Tweaker' tab → 'Extreme Memory Profile (X.M.P.)' = Profile1. ReBAR: 'Settings → IO Ports → Above 4G Decoding' + 'Re-Size BAR Support'.")
+                  : board.Contains("ASROCK") ? ("ASRock", "F2 (or Del) at boot", "'OC Tweaker' → 'Load XMP/EXPO Setting'. ReBAR: 'Advanced → PCIe/PCI Configuration → Above 4G Decoding' + 'Re-Size BAR'.")
+                  : board.Contains("DELL") || board.Contains("ALIENWARE") ? ("Dell / Alienware", "F2 at boot", "OEM firmware is limited — XMP/ReBAR are often missing. Check 'Advanced' / 'Performance' if present; otherwise there's little to tune.")
+                  : board.Contains("HP") || board.Contains("HEWLETT") ? ("HP", "F10 (or Esc) at boot", "OEM firmware hides most tuning. Update the BIOS from HP Support to unlock newer options; XMP is usually unavailable.")
+                  : board.Contains("LENOVO") || board.Contains("THINK") ? ("Lenovo", "F1 (or F2) at boot", "OEM firmware — look under 'Advanced' / 'Configuration'. Many consumer models lock memory profiles.")
+                  : board.Contains("ACER") || board.Contains("PREDATOR") ? ("Acer / Predator", "F2 at boot", "OEM firmware — options vary by model; look under 'Advanced'. Predator boards expose more (XMP under 'OC').")
+                  : ("Your board", "Usually Del or F2 at boot", "Look for an 'OC' / 'Tweaker' / 'Ai Tweaker' / 'Extreme Tweaker' menu for XMP/EXPO, and 'Above 4G Decoding' + 'Re-Size BAR' for ReBAR.");
+                var vcard = Section("Your board — " + v.name, "Entry key: " + v.key);
+                vcard.Children.Add(new TextBlock { Text = Loc.S(v.path), Opacity = 0.78, TextWrapping = TextWrapping.Wrap, FontSize = 12.5 });
+                adviceHost.Children.Add(Card(vcard));
             });
         });
     }

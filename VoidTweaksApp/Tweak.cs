@@ -422,6 +422,36 @@ public static class Engine
     }
     public static void ClearHistory() { try { if (File.Exists(HistoryPath)) File.Delete(HistoryPath); } catch { } }
 
+    // ---- benchmark history (saved runs, newest first) ----
+    private static string BenchPath => Path.Combine(DataDir, "benchmarks.log");
+    public static void RecordBenchmark(string result)
+    {
+        try
+        {
+            Directory.CreateDirectory(DataDir);
+            var oneLine = (result ?? "").Replace("\r", " ").Replace("\n", " · ").Trim();
+            if (oneLine.Length == 0) return;
+            File.AppendAllLines(BenchPath, new[] { DateTime.Now.ToString("yyyy-MM-dd HH:mm") + "  " + oneLine });
+        }
+        catch { }
+    }
+    public static List<string> ReadBenchmarks(int max = 8)
+    {
+        var o = new List<string>();
+        try
+        {
+            if (!File.Exists(BenchPath)) return o;
+            foreach (var l in File.ReadAllLines(BenchPath).Reverse())
+            {
+                if (o.Count >= max) break;
+                if (l.Trim().Length > 0) o.Add(l);
+            }
+        }
+        catch { }
+        return o;
+    }
+    public static void ClearBenchmarks() { try { if (File.Exists(BenchPath)) File.Delete(BenchPath); } catch { } }
+
     private static string WindowPath => Path.Combine(DataDir, "window.txt");
     public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
     public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }
