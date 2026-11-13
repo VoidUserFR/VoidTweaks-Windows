@@ -45,27 +45,29 @@ Most "PC optimizers" are closed boxes: they hide what they change, nag you to pa
 
 ---
 
-## 📸 A look inside - V2.6
+## 📸 A look inside — v3.0
 
 <div align="center">
 
-| Home — live usage & recommendations | Tweaks — green = applied, red = not |
-|:---:|:---:|
-| <img src="docs/img/home.png" width="420"/> | <img src="docs/img/tweaks.png" width="420"/> |
+**NullZone** — the new default look: a three-pane layout (icon rail → category column → content) with an animated black-hole background.
 
-| Power & Stress — plans + stress tests | Health — scored system snapshot |
-|:---:|:---:|
-| <img src="docs/img/power-stress.png" width="420"/> | <img src="docs/img/health.png" width="420"/> |
-
-| Cleanup — lazy one-click junk removal | Security — deep Defender scanning |
-|:---:|:---:|
-| <img src="docs/img/cleanup.png" width="420"/> | <img src="docs/img/security.png" width="420"/> |
+<img src="docs/img/home.png" width="880"/>
 
 </div>
 
 ---
 
 ## ✨ Features
+
+### 🎨 NullZone — the new look *(v3.0)*
+- A **three-pane** layout: icon rail (Home / Optimize / Tools / Fixes / Settings) → category column → content.
+- An **animated black-hole background** — drifting light, a distant-star field, and a white black-hole with rotating accretion rings. The in-app logo matches it.
+- Near-monochrome by design — colour is saved for action buttons and tweak status (green = applied, red = not).
+- **Style picker** in Settings (replaces "Window material"): **NullZone** + **Legacy** selectable; more coming soon.
+
+### 🧬 BIOS & Firmware *(v3.0)*
+- **BIOS & Firmware** — reads your BIOS/UEFI, checks Secure Boot / TPM / virtualization, gives safe spec-aware tuning steps, and **reboots straight into UEFI setup**.
+- **BIOS tweaks** — low-level boot/timer/CPU tweaks (HPET, dynamic tick, TSC, mitigations, C-states), behind an **unskippable 15-second warning**. It guides — it never flips firmware switches for you.
 
 ### 🏠 Home & Health
 - **Home** — live CPU / RAM gauges with sparklines, system-disk usage, and smart recommendations tailored to your PC.
@@ -97,7 +99,7 @@ Deep virus scanning with the built-in Windows engine — **quick**, **full**, or
 ### 🧰 Quality of life
 - **Restore points** — create, list and **delete** restore points, or open System Restore to roll back.
 - **Startup manager**, **process manager**, **winget app installer**, **presets** (built-in + your own, export/import).
-- **Themes** (dark / pure-black / soft dark / light), **accent colours**, **9 languages**, system tray, update checker, Discord Rich Presence (optional).
+- **Style picker** (NullZone + Legacy, more coming), **accent colours**, **9 languages**, system tray, update checker, Discord Rich Presence (optional).
 
 ---
 
