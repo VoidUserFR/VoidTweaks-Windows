@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:VoidTweaks"
-    Title="VoidTweaks" Height="770" Width="1200"
+    Title="VoidTweaks" Height="900" Width="1440" MinHeight="680" MinWidth="1060"
     Icon="VoidTweaks.ico"
     ExtendsContentIntoTitleBar="True"
     WindowBackdropType="Mica"
@@ -16,6 +16,8 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
+
+    <Grid x:Name="BgLayer" Grid.RowSpan="4" Panel.ZIndex="-1" IsHitTestVisible="False" />
 
     <ui:TitleBar Grid.Row="0" Title="VoidTweaks">
       <ui:TitleBar.Icon>
@@ -38,7 +40,7 @@
       </Border>
     </StackPanel>
 
-    <Border Grid.Row="2" Padding="20,4,20,10">
+    <Border x:Name="StatsBar" Grid.Row="2" Padding="20,4,20,10">
       <StackPanel Orientation="Horizontal">
         <StackPanel Margin="0,0,28,0" VerticalAlignment="Center">
           <TextBlock Text="MEMORY" FontSize="10" FontWeight="SemiBold" Opacity="0.55" />
@@ -66,18 +68,26 @@
 
     <Grid Grid.Row="3">
       <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="RailCol" Width="0" />
         <ColumnDefinition Width="240" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
-      <DockPanel Grid.Column="0" Margin="0,0,0,8">
+      <ScrollViewer x:Name="RailScroll" Grid.Column="0" VerticalScrollBarVisibility="Hidden" Visibility="Collapsed" Margin="10,4,2,8" CanContentScroll="False" local:SmoothScroll.Enabled="True">
+        <StackPanel x:Name="RailPanel" />
+      </ScrollViewer>
+
+      <DockPanel Grid.Column="1" Margin="0,0,0,8">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,2,0,8">
-          <Border Width="36" Height="36" CornerRadius="10" Background="#FF07070C" Margin="0,0,11,0">
+          <Border Width="36" Height="36" CornerRadius="10" Background="#FF060608" Margin="0,0,11,0">
             <Grid>
-              <Ellipse Width="28" Height="28" Stroke="#FFE59A3A" StrokeThickness="3" Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              <Ellipse Width="28" Height="28" Stroke="#FFFFD9A0" StrokeThickness="1.4" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              <Ellipse Width="12" Height="12" Fill="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
-              <Ellipse Width="12" Height="12" Stroke="White" StrokeThickness="0.8" Opacity="0.7" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Ellipse Width="31" Height="31" Stroke="#26FFFFFF" StrokeThickness="1" StrokeDashArray="2 2" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Ellipse Width="22" Height="22" Stroke="White" StrokeThickness="1.7" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse.Effect>
+                  <DropShadowEffect Color="White" BlurRadius="7" ShadowDepth="0" Opacity="0.6" />
+                </Ellipse.Effect>
+              </Ellipse>
+              <Ellipse Width="11" Height="11" Fill="#FF060608" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Grid>
           </Border>
           <StackPanel VerticalAlignment="Center">
@@ -91,7 +101,7 @@
         </ScrollViewer>
       </DockPanel>
 
-      <Grid Grid.Column="1">
+      <Grid Grid.Column="2">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />

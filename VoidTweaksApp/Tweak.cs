@@ -386,6 +386,10 @@ public static class Engine
     public static string GetThemeMode() { try { return File.Exists(ThemePath) ? File.ReadAllText(ThemePath).Trim() : ""; } catch { return ""; } }
     public static void SetThemeMode(string m) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(ThemePath, m.Trim()); } catch { } }
 
+    private static string StylePath => Path.Combine(DataDir, "style.txt");
+    public static string GetStyle() { try { return File.Exists(StylePath) ? File.ReadAllText(StylePath).Trim() : ""; } catch { return ""; } }
+    public static void SetStyle(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(StylePath, s.Trim()); } catch { } }
+
     private static string WindowPath => Path.Combine(DataDir, "window.txt");
     public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
     public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }
@@ -508,6 +512,30 @@ public static class Engine
         }
         return d;
     }
+
+    // ---- BIOS / firmware (read + guide; firmware can't be written from Windows) ----
+    public static Dictionary<string, string> BiosFacts()
+    {
+        var s = "$o=@(); "
+            + "try{ $b=Get-CimInstance Win32_BIOS; $o+=('vendor='+$b.Manufacturer); $o+=('version='+([string]$b.SMBIOSBIOSVersion)); try{ $d=[Management.ManagementDateTimeConverter]::ToDateTime($b.ReleaseDate); $o+=('date='+$d.ToString('yyyy-MM-dd')) }catch{} }catch{}; "
+            + "try{ $bb=Get-CimInstance Win32_BaseBoard; $o+=('board='+(($bb.Manufacturer+' '+$bb.Product).Trim())) }catch{}; "
+            + "try{ $sb=Confirm-SecureBootUEFI -ErrorAction Stop; $o+=('secureboot='+$sb); $o+=('uefi=True') }catch{ $o+=('secureboot=unknown') }; "
+            + "try{ $t=Get-Tpm -ErrorAction Stop; $o+=('tpm='+([bool]$t.TpmPresent)); $o+=('tpmready='+([bool]$t.TpmReady)) }catch{ try{ $sv=(Get-CimInstance -Namespace root\\cimv2\\security\\microsofttpm -Class Win32_Tpm -ErrorAction Stop).SpecVersion; $o+=('tpm=True'); $o+=('tpmspec='+$sv) }catch{ $o+=('tpm=unknown') } }; "
+            + "try{ $v=(Get-CimInstance Win32_Processor | Select-Object -First 1).VirtualizationFirmwareEnabled; $o+=('virt='+$v) }catch{}; "
+            + "try{ $r=Get-CimInstance Win32_PhysicalMemory; $spd=($r|Measure-Object Speed -Maximum).Maximum; $o+=('ramspeed='+$spd) }catch{}; "
+            + "$o -join \"`n\"";
+        var raw = RunOne(s);
+        var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in raw.Split('\n'))
+        {
+            var i = line.IndexOf('=');
+            if (i > 0) d[line.Substring(0, i).Trim()] = line.Substring(i + 1).Trim();
+        }
+        return d;
+    }
+    // Reboots the PC directly into UEFI/BIOS setup (needs a UEFI system; usually admin).
+    public static string RebootToFirmware()
+        => RunOne("try{ shutdown /r /fw /t 6 /c 'VoidTweaks: rebooting into UEFI/BIOS setup' ; 'Rebooting into UEFI/BIOS setup in ~6 seconds. Save your work now!' }catch{ 'Could not schedule firmware reboot (needs admin and a UEFI system): ' + $_.Exception.Message }");
 
     // ---- system report (shareable HTML) ----
     public static string SystemReportHtml(string path, IEnumerable<(string name, string state, string cat)> tweaks, IEnumerable<string> favorites)

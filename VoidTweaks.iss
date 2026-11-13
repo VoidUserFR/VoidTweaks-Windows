@@ -3,7 +3,7 @@
 ; Output: installer\VoidTweaks-Setup.exe
 
 #define MyAppName "VoidTweaks"
-#define MyAppVersion "2.7"
+#define MyAppVersion "3.0"
 #define MyAppPublisher "VoidTweaks"
 #define MyAppExe "VoidTweaks.exe"
 

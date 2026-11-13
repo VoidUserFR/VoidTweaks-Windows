@@ -18,10 +18,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "2.7";
+    public const string Version = "3.0";
     private HashSet<string> _favs = Engine.GetFavorites();
     private string _perfTab = "Power plans";
     private System.Threading.CancellationTokenSource? _stressCts;
+    private string _style = "obsidian";
+    private readonly System.Random _rng = new();
+    private bool _biosUnlocked;
+    private DispatcherTimer? _biosTimer;
+    private record StyleDef(string Key, string Name, string Accent, string Kind);
+    private static readonly StyleDef[] Styles =
+    {
+        new("obsidian", "NullZone", "#35D07A", "dark"),
+        new("legacy", "Legacy", "#8B7CF0", "dark"),
+        new("event-horizon", "Event Horizon", "#8B5CF6", "soon"),
+        new("nebula", "Nebula", "#FFD45E", "soon"),
+        new("terminal", "Midnight Terminal", "#39FF6E", "soon"),
+        new("synthwave", "Synthwave", "#FF2D95", "soon"),
+        new("fluent", "Fluent Light", "#7C5CFC", "soon"),
+        new("brutal", "Neo-Brutal", "#FF5C38", "soon"),
+    };
     private System.Windows.Forms.NotifyIcon? _tray;
     private string? _firstResult;
     private readonly Dictionary<string, (int total, int applied)> _catStats = new();
@@ -68,6 +84,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Power & Stress"] = "M13 2 4 14h6l-1 8 9-12h-6z",
         ["Favorites"] = "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z",
         ["Restore"] = "M3 12a9 9 0 1 0 3-6.7 M3 4v4h4 M12 7v5l4 2",
+        ["BIOS"] = "M6 6h12v12H6z M10 10h4v4h-4z M9 3v3 M15 3v3 M9 18v3 M15 18v3 M3 9h3 M3 14h3 M18 9h3 M18 14h3",
+        ["BIOS tweaks"] = "M6 6h12v12H6z M9 3v3 M15 3v3 M9 18v3 M15 18v3 M3 9h3 M3 14h3 M18 9h3 M18 14h3 M13 8l-3 4h3l-3 4",
         ["Game profiles"] = "M7 11h4 M9 9v4 M4 16l2-7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 7a2.5 2.5 0 0 1-4.6 1.3L17 15H7l-.4 1.3A2.5 2.5 0 0 1 4 16z",
         ["Cleanup"] = "M12 3l1.6 4 4 1.6-4 1.6L12 14l-1.6-3.8-4-1.6 4-1.6z M6 16l.8 2 2 .8-2 .8L6 22l-.8-2.4-2-.8 2-.8z",
         ["Security"] = "M12 3 5 6v6c0 4 3 6.5 7 9 4-2.5 7-5 7-9V6z M9 12l2 2 4-4",
@@ -81,7 +99,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Debloat"] = "#9AA0AD", ["Fixes"] = "#5AC8FA", ["Updates"] = "#5B9BFF", ["Maintenance"] = "#5FD0C5",
         ["Home"] = "#35B9AD", ["Networking"] = "#5B9BFF", ["Overclock"] = "#EF6A60", ["Game profiles"] = "#EF6A60",
         ["Cleanup"] = "#5FD0C5", ["Security"] = "#4CC38A",
-        ["Power & Stress"] = "#EF6A60", ["Favorites"] = "#F2C14E", ["Restore"] = "#5AC8FA",
+        ["Power & Stress"] = "#EF6A60", ["Favorites"] = "#F2C14E", ["Restore"] = "#5AC8FA", ["BIOS"] = "#E5AA3D", ["BIOS tweaks"] = "#EF6A60",
     };
 
     public MainWindow()
@@ -113,7 +131,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Closing += (_, _) => SaveWindowBounds();
         Loaded += (_, _) =>
         {
-            ApplyThemeMode(Engine.GetThemeMode() is { Length: > 0 } tm ? tm : "dark");
+            ApplyStyle(Engine.GetStyle() is { Length: > 0 } st ? st : "obsidian");
             CheckUpdates();
             if (Engine.FirstRun()) FirstRunTour();
         };
@@ -242,6 +260,163 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         catch { }
     }
 
+    // ---------------- UI styles (selectable looks) ----------------
+    private void ApplyStyle(string key)
+    {
+        var def = System.Array.Find(Styles, s => s.Key == key) ?? Styles[0];
+        if (def.Kind == "soon") { ShowToast(Loc.S(def.Name) + " — coming soon"); return; }
+        _style = def.Key;
+        _styleStatic = def.Key;
+        Engine.SetStyle(def.Key);
+        try { _accent = (Color)ColorConverter.ConvertFromString(def.Accent); _accentStatic = _accent; } catch { }
+        try
+        {
+            WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
+            BuildBackground(def.Key);
+            ApplyAccent();
+            try { StatsBar.Visibility = Ob ? Visibility.Collapsed : Visibility.Visible; } catch { }
+            BuildNav();
+            // re-assert the accent shortly after, in case WPF-UI's theme watcher resets it to the system colour
+            var t = new DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(500) };
+            t.Tick += (_, _) => { t.Stop(); try { ApplyAccent(); if (Ob) HighlightRail(); if (!string.IsNullOrEmpty(_sel)) Select(_sel); } catch { } };
+            t.Start();
+        }
+        catch { }
+        try { if (!string.IsNullOrEmpty(_sel)) Select(_sel); } catch { }
+    }
+
+    private static LinearGradientBrush LinB(Point s, Point e, params (string hex, double off)[] stops)
+    {
+        var b = new LinearGradientBrush { StartPoint = s, EndPoint = e };
+        foreach (var st in stops) b.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString(st.hex), st.off));
+        return b;
+    }
+    private static RadialGradientBrush RadGlow(Color c, double cx, double cy, double rx, double ry, byte alpha)
+    {
+        var b = new RadialGradientBrush { GradientOrigin = new Point(cx, cy), Center = new Point(cx, cy), RadiusX = rx, RadiusY = ry, MappingMode = BrushMappingMode.RelativeToBoundingBox };
+        b.GradientStops.Add(new GradientStop(Color.FromArgb(alpha, c.R, c.G, c.B), 0));
+        b.GradientStops.Add(new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 1));
+        return b;
+    }
+
+    // A soft radial glow whose centre slowly drifts (animating the brush centre leaves no edge gaps).
+    private void MovingGlow(byte alpha, byte r, byte g, byte b, double rx, double ry, Point from, Point to, double secs)
+    {
+        var br = new RadialGradientBrush { RadiusX = rx, RadiusY = ry, MappingMode = BrushMappingMode.RelativeToBoundingBox, Center = from, GradientOrigin = from };
+        br.GradientStops.Add(new GradientStop(Color.FromArgb(alpha, r, g, b), 0));
+        br.GradientStops.Add(new GradientStop(Color.FromArgb(0, r, g, b), 1));
+        BgLayer.Children.Add(new Rectangle { Fill = br });
+        var pa = new System.Windows.Media.Animation.PointAnimation(from, to, System.TimeSpan.FromSeconds(secs))
+        { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut } };
+        System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(pa, 30);
+        br.BeginAnimation(RadialGradientBrush.CenterProperty, pa);
+        br.BeginAnimation(RadialGradientBrush.GradientOriginProperty, pa);
+    }
+
+    // Animated starfield: a fixed 1000x600 canvas of twinkling dots, stretched to fill, slowly drifting.
+    private void AddStars(int count)
+    {
+        var canvas = new System.Windows.Controls.Canvas { Width = 1000, Height = 600 };
+        for (int i = 0; i < count; i++)
+        {
+            double sz = 0.35 + _rng.NextDouble() * 1.25;                 // smaller = more distant
+            var dot = new Ellipse { Width = sz, Height = sz, Fill = new SolidColorBrush(Color.FromRgb(0xEA, 0xEE, 0xF8)) };
+            System.Windows.Controls.Canvas.SetLeft(dot, _rng.NextDouble() * 1000);
+            System.Windows.Controls.Canvas.SetTop(dot, _rng.NextDouble() * 600);
+            double lo = 0.05 + _rng.NextDouble() * 0.16, hi = 0.32 + _rng.NextDouble() * 0.5;   // dimmer
+            dot.Opacity = lo;
+            var tw = new System.Windows.Media.Animation.DoubleAnimation(lo, hi, System.TimeSpan.FromSeconds(2.4 + _rng.NextDouble() * 4.0))
+            { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, BeginTime = System.TimeSpan.FromSeconds(_rng.NextDouble() * 5), EasingFunction = new System.Windows.Media.Animation.SineEase() };
+            System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(tw, 20);
+            dot.BeginAnimation(OpacityProperty, tw);
+            canvas.Children.Add(dot);
+        }
+        var drift = new TranslateTransform();
+        canvas.RenderTransform = drift;
+        var dx = new System.Windows.Media.Animation.DoubleAnimation(-30, 30, System.TimeSpan.FromSeconds(15)) { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut } };
+        var dy = new System.Windows.Media.Animation.DoubleAnimation(-16, 16, System.TimeSpan.FromSeconds(21)) { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut } };
+        System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(dx, 30);
+        System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(dy, 30);
+        drift.BeginAnimation(TranslateTransform.XProperty, dx);
+        drift.BeginAnimation(TranslateTransform.YProperty, dy);
+        BgLayer.Children.Add(new Viewbox { Stretch = Stretch.Fill, Child = canvas, IsHitTestVisible = false });
+    }
+
+    // Centred white "black hole": dark pulling core + two rotating white accretion rings with a soft glow.
+    private void AddBlackhole()
+    {
+        // sits in the empty lower-left area (below the nav), where it's fully visible
+        var host = new Grid { Width = 330, Height = 330, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(28, 150, 0, 0), Opacity = 0, IsHitTestVisible = false };
+
+        // core — radial black that fades out (the "hole" eating light)
+        var core = new Ellipse { Width = 150, Height = 150, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var coreBr = new RadialGradientBrush();
+        coreBr.GradientStops.Add(new GradientStop(Color.FromArgb(220, 0, 0, 0), 0));
+        coreBr.GradientStops.Add(new GradientStop(Color.FromArgb(150, 0, 0, 0), 0.6));
+        coreBr.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 1));
+        core.Fill = coreBr;
+        host.Children.Add(core);
+
+        // event horizon — crisp thin white ring with a glow
+        host.Children.Add(new Ellipse { Width = 130, Height = 130, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Stroke = new SolidColorBrush(Color.FromArgb(230, 255, 255, 255)), StrokeThickness = 1.6, Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.White, BlurRadius = 18, ShadowDepth = 0, Opacity = 0.75 } });
+
+        // two rotating dashed accretion rings (opposite directions)
+        void Ring(double d, double thick, double[] dash, double seconds, bool cw)
+        {
+            var g = new Grid { RenderTransformOrigin = new Point(0.5, 0.5) };
+            var rt = new RotateTransform(); g.RenderTransform = rt;
+            g.Children.Add(new Ellipse { Width = d, Height = d, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Stroke = new SolidColorBrush(Color.FromArgb(150, 255, 255, 255)), StrokeThickness = thick, StrokeDashArray = new DoubleCollection(dash), StrokeDashCap = PenLineCap.Round, Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.White, BlurRadius = 16, ShadowDepth = 0, Opacity = 0.5 } });
+            host.Children.Add(g);
+            var a = new System.Windows.Media.Animation.DoubleAnimation(cw ? 0 : 360, cw ? 360 : 0, System.TimeSpan.FromSeconds(seconds)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
+            System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(a, 30);
+            rt.BeginAnimation(RotateTransform.AngleProperty, a);
+        }
+        Ring(190, 2.4, new[] { 30.0, 10 }, 24, true);
+        Ring(260, 1.7, new[] { 9.0, 13 }, 36, false);
+        Ring(320, 1.2, new[] { 4.0, 15 }, 52, true);
+
+        BgLayer.Children.Add(host);
+        host.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 0.55, System.TimeSpan.FromSeconds(1.8)) { EasingFunction = new System.Windows.Media.Animation.SineEase() });
+    }
+
+    private void BuildBackground(string key)
+    {
+        try { BgLayer.Children.Clear(); } catch { return; }
+        var tl = new Point(0, 0); var br = new Point(0.45, 1);
+        if (key == "legacy")
+        {
+            var black = new SolidColorBrush(Colors.Black);
+            Background = black; try { Root.Background = black; } catch { }
+            return;
+        }
+        Background = new SolidColorBrush(Colors.Black);
+        try { Root.Background = Brushes.Transparent; } catch { }
+
+        LinearGradientBrush baseB = key switch
+        {
+            "obsidian" => LinB(new Point(0.2, 0), new Point(0.5, 1), ("#101116", 0), ("#0a0b0e", .5), ("#070709", 1)),
+            "event-horizon" => LinB(tl, br, ("#0c0c18", 0), ("#07070e", 1)),
+            "terminal" => LinB(tl, br, ("#06160e", 0), ("#04100a", 1)),
+            "synthwave" => LinB(tl, br, ("#1a0b33", 0), ("#2a0f52", .55), ("#4a1d5e", 1)),
+            "nebula" => LinB(new Point(0, 0), new Point(1, 1), ("#4c1d95", 0), ("#1e40af", .45), ("#0e7490", .8), ("#9d174d", 1)),
+            _ => LinB(tl, br, ("#0c0f15", 0), ("#070809", 1)),
+        };
+        BgLayer.Children.Add(new Rectangle { Fill = baseB });
+
+        if (key == "obsidian")
+        {
+            // deep near-black + faster drifting light + a distant-star field + a centred white black-hole
+            MovingGlow(58, 0xC6, 0xD2, 0xE6, 0.92, 0.72, new Point(0.12, -0.08), new Point(0.9, 0.24), 9);
+            MovingGlow(32, 0x7A, 0x90, 0xB2, 0.72, 0.6, new Point(0.95, 1.1), new Point(0.08, 0.78), 13);
+            AddStars(100);
+            AddBlackhole();
+        }
+        else if (key == "event-horizon")
+            BgLayer.Children.Add(new Rectangle { Fill = RadGlow(C(0x8B, 0x5C, 0xF6), 0.5, -0.15, 0.6, 0.5, 56) });
+        else if (key == "terminal")
+            BgLayer.Children.Add(new Rectangle { Fill = RadGlow(C(0x39, 0xFF, 0x6E), 0.5, 1.12, 0.6, 0.5, 26) });
+    }
+
     private void StartRpc(string id)
     {
         try
@@ -297,24 +472,113 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     // ---------------- navigation ----------------
+    // ---- Obsidian three-pane rail ----
+    private readonly (string Key, string Icon)[] RailDefs =
+    {
+        ("Home", "Home"), ("Optimize", "Performance"), ("Tools", "Maintenance"), ("Fixes", "Fixes"), ("Settings", "Settings")
+    };
+    private string _railSection = "Home";
+    private readonly Dictionary<string, (Border box, TextBlock label, System.Windows.Shapes.Path icon)> _rail = new();
+
+    private string[] SectionItems(string key) => key switch
+    {
+        "Home" => new[] { "Home", "Networking", "Health" },
+        "Optimize" => new[] { "All", "Favorites", "Needs attention" }.Concat(_cat.Categories.Where(c => c != "Fixes" && c != "Debloat" && c != "Maintenance")).ToArray(),
+        "Tools" => new[] { "Cleanup", "Security", "Overclock", "BIOS", "BIOS tweaks", "Power & Stress", "Apps", "Game profiles", "Presets", "Processes", "Startup", "Debloat", "Maintenance" },
+        "Fixes" => new[] { "Fixes", "Restore" },
+        "Settings" => new[] { "Settings" },
+        _ => new[] { "Home" }
+    };
+    private string SectionOf(string name)
+    {
+        foreach (var rd in RailDefs) if (System.Array.IndexOf(SectionItems(rd.Key), name) >= 0) return rd.Key;
+        return _railSection;
+    }
+
     private void BuildNav()
     {
-        NavPanel.Children.Clear();
         _nav.Clear();
         _catStats.Clear();
         foreach (var c in _cat.Categories) { var items = _cat.Tweaks.Where(t => t.Category == c).ToList(); _catStats[c] = (items.Count, items.Count(t => Engine.State(t) == "applied")); }
+
+        if (Ob)
+        {
+            try { RailCol.Width = new GridLength(150); RailScroll.Visibility = Visibility.Visible; } catch { }
+            BuildRail();
+            BuildSubNav();
+            Select(SectionItems(_railSection)[0]);
+            return;
+        }
+
+        try { RailCol.Width = new GridLength(0); RailScroll.Visibility = Visibility.Collapsed; } catch { }
+        NavPanel.Children.Clear();
         AddGroup("OVERVIEW");
         foreach (var n in new[] { "Home", "Networking", "Health" }) AddItem(n);
         AddGroup("MENU");
         foreach (var n in new[] { "All", "Favorites", "Needs attention", "Cleanup", "Security", "Presets", "Startup", "Processes" }) AddItem(n);
         AddGroup("INSTALL & TUNE");
-        foreach (var n in new[] { "Apps", "Game profiles", "Overclock", "Power & Stress" }) AddItem(n);
+        foreach (var n in new[] { "Apps", "Game profiles", "Overclock", "BIOS", "BIOS tweaks", "Power & Stress" }) AddItem(n);
         AddGroup("TWEAKS");
         foreach (var c in _cat.Categories) AddItem(c);
         AddGroup("APP");
         AddItem("Restore");
         AddItem("Settings");
         Select("Home");
+    }
+
+    private void BuildSubNav()
+    {
+        NavPanel.Children.Clear();
+        _nav.Clear();
+        foreach (var n in SectionItems(_railSection)) AddItem(n);
+    }
+
+    private void BuildRail()
+    {
+        RailPanel.Children.Clear();
+        _rail.Clear();
+        foreach (var rd in RailDefs)
+        {
+            var g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var vb = new Viewbox { Width = 19, Height = 19, VerticalAlignment = VerticalAlignment.Center };
+            var path = new System.Windows.Shapes.Path { StrokeThickness = 2, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Stroke = new SolidColorBrush(C(0x9a, 0x9a, 0xb0)) };
+            try { path.Data = Geometry.Parse(IconGeo[rd.Icon]); } catch { }
+            vb.Child = path;
+            Grid.SetColumn(vb, 0); g.Children.Add(vb);
+            var label = new TextBlock { Text = Loc.S(rd.Key), VerticalAlignment = VerticalAlignment.Center, FontSize = 13.5, Margin = new Thickness(11, 0, 0, 0), Foreground = new SolidColorBrush(C(0xC2, 0xC2, 0xD0)) };
+            Grid.SetColumn(label, 1); g.Children.Add(label);
+            var box = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 10, 11, 10), Margin = new Thickness(0, 2, 6, 2), Background = Brushes.Transparent, Child = g, Cursor = System.Windows.Input.Cursors.Hand };
+            var key = rd.Key;
+            box.MouseLeftButtonUp += (_, _) => SelectRail(key);
+            box.MouseEnter += (_, _) => { if (_railSection != key) box.Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)); };
+            box.MouseLeave += (_, _) => { if (_railSection != key) box.Background = Brushes.Transparent; };
+            _rail[key] = (box, label, path);
+            RailPanel.Children.Add(box);
+        }
+        HighlightRail();
+    }
+
+    private void HighlightRail()
+    {
+        var ua = UiAccent;
+        foreach (var kv in _rail)
+        {
+            bool on = kv.Key == _railSection;
+            kv.Value.box.Background = on ? new SolidColorBrush(Color.FromArgb(on && _styleStatic == "obsidian" ? (byte)26 : (byte)38, ua.R, ua.G, ua.B)) : Brushes.Transparent;
+            kv.Value.label.Foreground = new SolidColorBrush(on ? ua : C(0xC2, 0xC2, 0xD0));
+            kv.Value.label.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+            kv.Value.icon.Stroke = new SolidColorBrush(on ? ua : C(0x9a, 0x9a, 0xb0));
+        }
+    }
+
+    private void SelectRail(string key)
+    {
+        _railSection = key;
+        BuildSubNav();
+        HighlightRail();
+        Select(SectionItems(key)[0]);
     }
 
     private void AddGroup(string text) =>
@@ -371,8 +635,14 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void Select(string name)
     {
         if (!string.IsNullOrEmpty(_search)) { _navving = true; try { SearchBox.Text = ""; } catch { } _navving = false; _search = ""; }
+        if (name != "BIOS tweaks") { _biosUnlocked = false; try { _biosTimer?.Stop(); } catch { } }
+        if (Ob && _rail.Count > 0)
+        {
+            var sec = SectionOf(name);
+            if (sec != _railSection) { _railSection = sec; BuildSubNav(); HighlightRail(); }
+        }
         _sel = name;
-        var accent = _accent;
+        var accent = UiAccent;
         foreach (var kv in _nav)
         {
             bool on = kv.Key == name;
@@ -395,15 +665,19 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         catch { }
     }
 
+    // NullZone (obsidian) is near-monochrome: the UI chrome (nav, section bars, rail) uses a neutral
+    // off-white; the green/red accent is reserved for key action buttons and the tweak status glow/chips.
+    private Color UiAccent => _styleStatic == "obsidian" ? Color.FromRgb(0xDC, 0xDF, 0xE6) : _accent;
     private void ApplyAccent()
     {
-        _accentStatic = _accent;
+        _accentStatic = UiAccent;
         try
         {
             var theme = Wpf.Ui.Appearance.ApplicationThemeManager.GetAppTheme();
             if (theme == Wpf.Ui.Appearance.ApplicationTheme.Unknown) theme = Wpf.Ui.Appearance.ApplicationTheme.Dark;
-            Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(_accent, theme);
+            // apply theme first, then accent last so our accent wins (WPF-UI can reset it otherwise)
             Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme, WindowBackdropType, false);
+            Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(_accent, theme);
         }
         catch { }
     }
@@ -427,6 +701,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             case "Home": ShowHome(); break;
             case "Networking": ShowNetwork(); break;
             case "Overclock": ShowOverclock(); break;
+            case "BIOS": ShowBios(); break;
+            case "BIOS tweaks": ShowBiosTweaks(); break;
             case "Power & Stress": ShowPerformanceLab(); break;
             case "Favorites": ShowFavorites(); break;
             case "Restore": ShowRestore(); break;
@@ -487,6 +763,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         ["Power & Stress"] = "power plan powerplan desktop laptop stress test cpu burn torture wifi network stability jitter loss performance",
         ["Favorites"] = "favorites favourite starred pinned pins my tweaks star",
         ["Restore"] = "restore point rollback system protection backup checkpoint recover undo",
+        ["BIOS"] = "bios uefi firmware secure boot tpm virtualization vt xmp expo resizable bar motherboard reboot setup ftpm csm",
+        ["BIOS tweaks"] = "bios tweaks hpet dynamic tick tsc mitigations spectre meltdown bcdedit c-states idle low level advanced risky",
         ["Game profiles"] = "game gaming fps profile valorant warzone competitive",
         ["Apps"] = "install apps winget software download programs browser",
         ["Processes"] = "process task kill end useless memory hog",
@@ -705,7 +983,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         var baseBg = CardBg;
         var hoverBg = CardBgHover;
-        var eff = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, BlurRadius = 16, ShadowDepth = 0, Opacity = 0 };
         var inner = new Border
         {
             Background = new SolidColorBrush(baseBg),
@@ -724,10 +1001,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         {
             CornerRadius = new CornerRadius(14),
             Margin = new Thickness(0, 0, 0, _compact ? 9 : 13),
-            Child = grid,
-            Effect = eff
+            Child = grid
         };
-        b.Loaded += (_, _) => { var a = new System.Windows.Media.Animation.DoubleAnimation(0, 0.4, System.TimeSpan.FromMilliseconds(260)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } }; eff.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, a); };
         inner.MouseEnter += (_, _) => inner.Background = new SolidColorBrush(hoverBg);
         inner.MouseLeave += (_, _) => inner.Background = new SolidColorBrush(baseBg);
         return b;
@@ -1299,13 +1574,18 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         drow.Children.Add(comfy); drow.Children.Add(compact); d.Children.Add(drow);
         TweakList.Items.Add(Card(d));
 
-        var b = Section("Window material", "Mica is the Windows 11 look; Acrylic is blurrier; None is solid.");
-        var brow = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var (lbl, bt) in new (string, Wpf.Ui.Controls.WindowBackdropType)[] { ("Mica", Wpf.Ui.Controls.WindowBackdropType.Mica), ("Acrylic", Wpf.Ui.Controls.WindowBackdropType.Acrylic), ("Tabbed", Wpf.Ui.Controls.WindowBackdropType.Tabbed), ("None", Wpf.Ui.Controls.WindowBackdropType.None) })
+        var b = Section("UI style", "Pick the app's look. Obsidian is the new default (clean, with a soft fading background); Legacy keeps the classic UI. Light styles are on the way.");
+        var srow = new WrapPanel();
+        foreach (var sd in Styles)
         {
-            var btn = Btn(lbl, () => { try { WindowBackdropType = bt; } catch { } }); btn.Width = 90; btn.Margin = new Thickness(0, 0, 8, 0); brow.Children.Add(btn);
+            bool on = sd.Key == _style;
+            bool soon = sd.Kind == "soon";
+            var sb = new Wpf.Ui.Controls.Button { Content = Loc.S(sd.Name) + (soon ? "  (soon)" : ""), Appearance = on ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary, Margin = new Thickness(0, 0, 8, 8) };
+            if (soon) { sb.Opacity = 0.55; sb.ToolTip = Loc.S("Coming soon"); }
+            var k = sd.Key; sb.Click += (_, _) => { ApplyStyle(k); ShowSettings(); };
+            srow.Children.Add(sb);
         }
-        b.Children.Add(brow);
+        b.Children.Add(srow);
         TweakList.Items.Add(Card(b));
 
         var m = Section("Scheduled maintenance", "Create a weekly task (Sundays, noon) that flushes DNS and clears temp files.");
@@ -1441,6 +1721,167 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 adviceHost.Children.Add(Card(adv));
             });
         });
+    }
+
+    // ---------------- BIOS / firmware ----------------
+    private void ShowBios()
+    {
+        HeaderTitle.Text = Loc.S("BIOS & Firmware");
+        HeaderSub.Text = Loc.S("Read your firmware, check key features, and get safe tuning steps — then jump straight into UEFI setup");
+        TweakList.Items.Clear();
+
+        var warn = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(40, 0xEF, 0x6A, 0x60)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(120, 0xEF, 0x6A, 0x60)),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(0, 0, 0, 12),
+            Child = new TextBlock { Text = Loc.S("⚠  BIOS/UEFI settings live in firmware and change at your own risk — a wrong one can stop your PC booting. VoidTweaks only reads and guides; it never flips BIOS switches for you. Note the current values before you change anything."), Foreground = new SolidColorBrush(C(0xF2, 0xB0, 0xAA)), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 }
+        };
+        TweakList.Items.Add(warn);
+
+        var info = Section("Your firmware", "Detected BIOS / UEFI details.");
+        var infoTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.8, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 21 };
+        info.Children.Add(infoTxt);
+        TweakList.Items.Add(Card(info));
+
+        var checksHost = new StackPanel { Margin = new Thickness(0, 2, 0, 0) };
+        checksHost.Children.Add(new TextBlock { Text = Loc.S("Feature checks"), FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 2, 0, 8) });
+        var checksLoading = new TextBlock { Text = Loc.S("Checking…"), Opacity = 0.55, Margin = new Thickness(2, 0, 0, 0), FontSize = 12.5 };
+        checksHost.Children.Add(checksLoading);
+        TweakList.Items.Add(checksHost);
+
+        var reb = Section("Enter UEFI / BIOS setup", "Reboots straight into the firmware settings screen — no mashing Del/F2 at boot. Save your work first.");
+        var rb = Btn("Reboot into UEFI setup", () =>
+        {
+            if (System.Windows.MessageBox.Show(this, Loc.S("This reboots your PC now into the UEFI/BIOS setup screen. Save everything first. Continue?"), Loc.S("VoidTweaks — Enter UEFI"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes)
+            { Log("Scheduling reboot into UEFI setup…"); System.Threading.Tasks.Task.Run(() => { var r = Engine.RebootToFirmware(); Dispatcher.Invoke(() => Log(r)); }); }
+        });
+        rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
+        if (!IsAdmin()) rb.ToolTip = Loc.S("Usually needs administrator");
+        reb.Children.Add(rb);
+        TweakList.Items.Add(Card(reb));
+
+        var adviceHost = new StackPanel();
+        TweakList.Items.Add(adviceHost);
+
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var f = Engine.BiosFacts();
+            string specs = ""; try { specs = Engine.SpecInfo(); } catch { }
+            bool amd = specs.Contains("AMD", StringComparison.OrdinalIgnoreCase) || specs.Contains("Ryzen", StringComparison.OrdinalIgnoreCase);
+            bool intel = specs.Contains("Intel", StringComparison.OrdinalIgnoreCase);
+            Dispatcher.Invoke(() =>
+            {
+                string Get(string k, string dflt = "—") => f.TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v) ? v : dflt;
+                infoTxt.Text = $"BIOS   : {Get("vendor")}  {Get("version")}\n         dated {Get("date")}\nBoard  : {Get("board")}\nMode   : {(f.ContainsKey("uefi") ? "UEFI" : "Legacy / unknown")}\nRAM    : {Get("ramspeed", "?")} MT/s (current)";
+
+                checksHost.Children.Remove(checksLoading);
+                void Chk(string title, bool ok, string detail) => checksHost.Children.Add(Row(PillBox(ok ? "OK" : "Attention", ok ? C(0x4C, 0xC3, 0x8A) : C(0xE5, 0xAA, 0x3D)), Loc.S(title), Loc.S(detail)));
+                bool sb = string.Equals(Get("secureboot"), "True", StringComparison.OrdinalIgnoreCase);
+                Chk("Secure Boot", sb, sb ? "On — good for security and some anti-cheat." : "Off / unknown. Enable in BIOS (UEFI mode) if an anti-cheat needs it.");
+                bool tpm = string.Equals(Get("tpm"), "True", StringComparison.OrdinalIgnoreCase);
+                Chk("TPM", tpm, tpm ? "Present — Windows 11 requirement met." : "Not detected. Enable fTPM (AMD) / PTT (Intel) in BIOS.");
+                bool vok = string.Equals(Get("virt"), "True", StringComparison.OrdinalIgnoreCase);
+                Chk("Virtualization (VT)", vok, vok ? "Enabled — good for VMs, WSL, emulators." : "Off / unknown. Enable SVM (AMD) / VT-x (Intel) if you run VMs.");
+
+                var adv = Section("Recommended BIOS tweaks", "Do these in UEFI setup (reboot above), not here. Note your current values first.");
+                var tips = new List<string>
+                {
+                    "1.  RAM profile — the biggest free win. Enable " + (amd ? "EXPO / DOCP" : intel ? "XMP" : "XMP (Intel) / EXPO (AMD)") + " so your RAM runs at its rated speed instead of a slow default. It's currently reporting " + Get("ramspeed", "?") + " MT/s.",
+                    "2.  Resizable BAR — turn on 'Re-Size BAR Support' + 'Above 4G Decoding' for a small GPU boost in many games (modern GPUs).",
+                    "3.  Pure UEFI — set boot mode to UEFI and disable CSM for faster boot and Secure Boot support (Windows must already be UEFI/GPT).",
+                    "4.  Security — enable " + (amd ? "fTPM" : intel ? "PTT" : "fTPM / PTT") + " and Secure Boot (Windows 11 and some anti-cheat need them).",
+                    amd ? "5.  CPU (AMD) — enable PBO (Precision Boost Overdrive) for a small auto boost; Curve Optimizer −15 to −30 runs cooler and higher. No fixed all-core OC needed."
+                        : intel ? "5.  CPU (Intel) — stay near stock on 12th–14th gen; set a sane power limit (PL1=PL2) or 'Intel Default Settings' for stability."
+                        : "5.  CPU — enable your board's auto-boost (PBO on AMD, stock limits on Intel); avoid manual all-core voltage OC.",
+                    "6.  Fast Boot — if the PC won't POST reliably after changes, disable Fast Boot so you can get back into setup easily.",
+                };
+                foreach (var t in tips) adv.Children.Add(new TextBlock { Text = Loc.S(t), Opacity = 0.74, TextWrapping = TextWrapping.Wrap, FontSize = 12.5, Margin = new Thickness(0, 0, 0, 9) });
+                var tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
+                var hw = Btn("Install HWiNFO (read sensors)", () => InstallTool("REALiX.HWiNFO", "HWiNFO")); hw.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
+                tools.Children.Add(hw);
+                adv.Children.Add(tools);
+                adviceHost.Children.Add(Card(adv));
+            });
+        });
+    }
+
+    // ---------------- BIOS tweaks (low-level, gated behind a 15s unskippable warning) ----------------
+    private void ShowBiosTweaks()
+    {
+        HeaderTitle.Text = Loc.S("BIOS tweaks");
+        HeaderSub.Text = Loc.S("Low-level, boot-affecting tweaks — advanced users only");
+        TweakList.Items.Clear();
+
+        if (!_biosUnlocked)
+        {
+            var sp = new StackPanel();
+            sp.Children.Add(new TextBlock { Text = "⚠", FontSize = 42, HorizontalAlignment = HorizontalAlignment.Center, Foreground = new SolidColorBrush(C(0xEF, 0x6A, 0x60)), Margin = new Thickness(0, 6, 0, 10) });
+            sp.Children.Add(new TextBlock { Text = Loc.S("Warning: only change things in this section if you KNOW what you're doing."), FontSize = 18, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 10) });
+            sp.Children.Add(new TextBlock { Text = Loc.S("These are low-level boot, timer and CPU settings. A wrong one can cause stutter, instability, overheating, or stop Windows from booting. Everything here needs a restart and administrator. Note your defaults first."), Opacity = 0.75, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontSize = 13, Margin = new Thickness(18, 0, 18, 18) });
+            var cont = new Wpf.Ui.Controls.Button { Appearance = Wpf.Ui.Controls.ControlAppearance.Danger, HorizontalAlignment = HorizontalAlignment.Center, Height = 42, Width = 300, IsEnabled = false };
+            sp.Children.Add(cont);
+            var card = new Border { Background = new SolidColorBrush(Color.FromArgb(46, 0xEF, 0x6A, 0x60)), BorderBrush = new SolidColorBrush(Color.FromArgb(130, 0xEF, 0x6A, 0x60)), BorderThickness = new Thickness(1.5), CornerRadius = new CornerRadius(16), Padding = new Thickness(24), Margin = new Thickness(0, 14, 0, 0), Child = sp };
+            TweakList.Items.Add(card);
+
+            int left = 15;
+            cont.Content = Loc.S("I understand — continue") + $"  ({left}s)";
+            try { _biosTimer?.Stop(); } catch { }
+            _biosTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(1) };
+            _biosTimer.Tick += (_, _) =>
+            {
+                left--;
+                if (left <= 0) { try { _biosTimer!.Stop(); } catch { } cont.IsEnabled = true; cont.Content = Loc.S("I understand — continue"); }
+                else cont.Content = Loc.S("I understand — continue") + $"  ({left}s)";
+            };
+            _biosTimer.Start();
+            cont.Click += (_, _) => { if (!cont.IsEnabled) return; _biosUnlocked = true; try { _biosTimer?.Stop(); } catch { } ShowBiosTweaks(); };
+            return;
+        }
+
+        var banner = new Border { Background = new SolidColorBrush(Color.FromArgb(40, 0xEF, 0x6A, 0x60)), BorderBrush = new SolidColorBrush(Color.FromArgb(120, 0xEF, 0x6A, 0x60)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(0, 0, 0, 12), Child = new TextBlock { Text = Loc.S("⚠  Advanced. Each tweak needs a reboot + administrator and can affect stability. Make a restore point (Restore tab) before you start."), Foreground = new SolidColorBrush(C(0xF2, 0xB0, 0xAA)), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 } };
+        TweakList.Items.Add(banner);
+
+        void TweakCard(string title, string desc, string[] apply, string[] revert)
+        {
+            var s = Section(title, desc);
+            var row = new WrapPanel();
+            var a = new Wpf.Ui.Controls.Button { Content = Loc.S("Apply"), Appearance = Wpf.Ui.Controls.ControlAppearance.Primary, Margin = new Thickness(0, 0, 8, 0), Width = 100 };
+            var r = new Wpf.Ui.Controls.Button { Content = Loc.S("Revert"), Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary, Width = 100 };
+            if (!IsAdmin()) { a.IsEnabled = r.IsEnabled = false; a.ToolTip = r.ToolTip = Loc.S("Needs administrator"); }
+            a.Click += (_, _) => RunRaw(apply, "BIOS tweak: " + title);
+            r.Click += (_, _) => RunRaw(revert, "Revert: " + title);
+            row.Children.Add(a); row.Children.Add(r);
+            s.Children.Add(row);
+            TweakList.Items.Add(Card(s));
+        }
+
+        TweakCard("Disable HPET", "Stops using the High Precision Event Timer as the platform clock. Can lower latency on some rigs, add stutter on others — test both.",
+            new[] { "bcdedit /set useplatformclock false" }, new[] { "bcdedit /deletevalue useplatformclock" });
+        TweakCard("Disable dynamic tick", "Runs the timer at a fixed rate instead of coalescing ticks. Can smooth frametimes; uses a little more power.",
+            new[] { "bcdedit /set disabledynamictick yes" }, new[] { "bcdedit /set disabledynamictick no" });
+        TweakCard("TSC sync policy = Enhanced", "Forces the enhanced TSC synchronization policy across cores. A niche latency tweak.",
+            new[] { "bcdedit /set tscsyncpolicy Enhanced" }, new[] { "bcdedit /deletevalue tscsyncpolicy" });
+        TweakCard("Disable CPU security mitigations", "Turns OFF Spectre/Meltdown mitigations for a small CPU gain. BIG security tradeoff — only on an isolated / offline box.",
+            new[] { "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\" /v FeatureSettingsOverride /t REG_DWORD /d 3 /f", "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\" /v FeatureSettingsOverrideMask /t REG_DWORD /d 3 /f" },
+            new[] { "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\" /v FeatureSettingsOverride /t REG_DWORD /d 0 /f", "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\" /v FeatureSettingsOverrideMask /t REG_DWORD /d 3 /f" });
+        TweakCard("Disable CPU idle (C‑states)", "Stops the CPU entering idle states — lowest latency, but hotter and more power. Desktops with good cooling only.",
+            new[] { "powercfg /setacvalueindex scheme_current sub_processor IDLEDISABLE 1; powercfg /setactive scheme_current" }, new[] { "powercfg /setacvalueindex scheme_current sub_processor IDLEDISABLE 0; powercfg /setactive scheme_current" });
+
+        var reb = Section("Apply changes", "Most of these need a restart to take effect.");
+        var rbt = Btn("Reboot now", () => { if (System.Windows.MessageBox.Show(this, Loc.S("Reboot now to apply the BIOS tweaks? Save your work first."), Loc.S("VoidTweaks"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes) RunRaw(new[] { "shutdown /r /t 5 /c \"VoidTweaks: applying BIOS tweaks\"" }, "Reboot"); });
+        rbt.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
+        reb.Children.Add(rbt);
+        TweakList.Items.Add(Card(reb));
+    }
+
+    private void RunRaw(System.Collections.Generic.IEnumerable<string> cmds, string label)
+    {
+        if (_busy) { Log("Busy — wait for the current action to finish."); return; }
+        var list = cmds.ToList();
+        Log($"=== {label} ===");
+        SetBusy(true);
+        System.Threading.Tasks.Task.Run(() => { var r = Engine.RunCommands(list); Dispatcher.Invoke(() => { Log(r); SetBusy(false); ShowToast(Loc.S("Done") + " ✓"); }); });
     }
 
     private static string FormatGpu(string csv)
@@ -1941,9 +2382,12 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         return grid;
     }
     // EXM-style surface tokens (kept theme-adaptive via white overlays)
-    private static readonly Color CardBg = Color.FromArgb(20, 255, 255, 255);
-    private static readonly Color CardBgHover = Color.FromArgb(32, 255, 255, 255);
-    private static readonly Color CardBorder = Color.FromArgb(28, 255, 255, 255);
+    private static string _styleStatic = "obsidian";
+    private static bool Ob => _styleStatic == "obsidian";
+    // Obsidian uses flat solid graphite panels (like the reference); other styles keep translucent cards.
+    private static Color CardBg => Ob ? Color.FromRgb(0x14, 0x15, 0x1a) : Color.FromArgb(20, 255, 255, 255);
+    private static Color CardBgHover => Ob ? Color.FromRgb(0x1a, 0x1b, 0x22) : Color.FromArgb(32, 255, 255, 255);
+    private static Color CardBorder => Ob ? Color.FromArgb(0x22, 255, 255, 255) : Color.FromArgb(28, 255, 255, 255);
     private static Border Card(UIElement child)
     {
         var b = new Border
