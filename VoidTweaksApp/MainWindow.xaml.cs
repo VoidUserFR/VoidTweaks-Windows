@@ -2461,6 +2461,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         drow.Children.Add(dOld); drow.Children.Add(dAll);
         del.Children.Add(drow);
         TweakList.Items.Add(Card(del));
+
+        var hist = Section("Change history", "Every tweak you apply or revert in VoidTweaks is logged here — your audit trail.");
+        var hrows = Engine.ReadHistory(25);
+        if (hrows.Count == 0) hist.Children.Add(new TextBlock { Text = Loc.S("No changes logged yet."), Opacity = 0.6, FontSize = 12.5 });
+        else
+        {
+            foreach (var h in hrows)
+            {
+                var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 3, 0, 3) };
+                var col = h.action == "apply" ? C(0x4C, 0xC3, 0x8A) : C(0xE5, 0xAA, 0x3D);
+                row.Children.Add(Badge(h.action == "apply" ? "Applied" : "Reverted", col));
+                row.Children.Add(new TextBlock { Text = h.name, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 10, 0), TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 360 });
+                row.Children.Add(new TextBlock { Text = h.time, Opacity = 0.5, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center });
+                hist.Children.Add(row);
+            }
+            var clr = Btn("Clear history", () => { Engine.ClearHistory(); ShowToast(Loc.S("History cleared")); if (_sel == "Restore") ShowRestore(); });
+            clr.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary; clr.Margin = new Thickness(0, 12, 0, 0);
+            hist.Children.Add(clr);
+        }
+        TweakList.Items.Add(Card(hist));
     }
 
     private void LoadRestorePoints(Panel host)
@@ -2665,6 +2685,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             {
                 Log(outp);
                 if (ids.Count > 0) { _undo = ids; UndoBtn.IsEnabled = true; }
+                try { Engine.RecordHistory(set.Where(t => (revert ? t.Revert.Count : t.Apply.Count) > 0 && (revert || !t.RequiresAdmin || IsAdmin())).Select(t => (t.Id, t.Name)), revert ? "revert" : "apply"); } catch { }
                 SetBusy(false);
                 Render();
                 ShowToast((revert ? Loc.S("Reverted") : Loc.S("Applied")) + " ✓");

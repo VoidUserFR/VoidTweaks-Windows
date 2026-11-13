@@ -390,6 +390,38 @@ public static class Engine
     public static string GetStyle() { try { return File.Exists(StylePath) ? File.ReadAllText(StylePath).Trim() : ""; } catch { return ""; } }
     public static void SetStyle(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(StylePath, s.Trim()); } catch { } }
 
+    // ---- change history (audit log of applied / reverted tweaks) ----
+    private static string HistoryPath => Path.Combine(DataDir, "history.log");
+    public static void RecordHistory(IEnumerable<(string id, string name)> items, string action)
+    {
+        try
+        {
+            Directory.CreateDirectory(DataDir);
+            var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+            var lines = items.Select(it => $"{now}|{action}|{it.id}|{(it.name ?? "").Replace('|', ' ')}");
+            if (lines.Any()) File.AppendAllLines(HistoryPath, lines);
+        }
+        catch { }
+    }
+    public static List<(string time, string action, string id, string name)> ReadHistory(int max = 40)
+    {
+        var outp = new List<(string, string, string, string)>();
+        try
+        {
+            if (!File.Exists(HistoryPath)) return outp;
+            foreach (var l in File.ReadAllLines(HistoryPath).Reverse())
+            {
+                if (outp.Count >= max) break;
+                var p = l.Split('|');
+                if (p.Length < 4) continue;
+                outp.Add((p[0], p[1], p[2], p[3]));
+            }
+        }
+        catch { }
+        return outp;
+    }
+    public static void ClearHistory() { try { if (File.Exists(HistoryPath)) File.Delete(HistoryPath); } catch { } }
+
     private static string WindowPath => Path.Combine(DataDir, "window.txt");
     public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
     public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }
