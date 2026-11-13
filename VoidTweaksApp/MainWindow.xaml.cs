@@ -18,7 +18,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "3.0";
+    public const string Version = "3.1";
     private HashSet<string> _favs = Engine.GetFavorites();
     private string _perfTab = "Power plans";
     private System.Threading.CancellationTokenSource? _stressCts;
@@ -880,14 +880,61 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     // ---------------- tweak list ----------------
+    private string _listFilter = "all";
+    private string _lastListTitle = "";
+    private List<Tweak> _lastListItems = new();
+
+    private static bool IsPending(string s) => s == "default" || s == "custom";
+
     private void ShowTweakList(string title, List<Tweak> items)
     {
+        if (title != _lastListTitle) _listFilter = "all";   // reset filter when navigating to a different list
+        _lastListTitle = title; _lastListItems = items;
+
         int applied = items.Count(t => Engine.State(t) == "applied");
+        int pending = items.Count(t => IsPending(Engine.State(t)));
         HeaderTitle.Text = title;
         HeaderSub.Text = $"{items.Count} tweak(s) · {applied} applied";
         TweakList.Items.Clear();
         if (items.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing here."), Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) }); return; }
-        foreach (var tw in items) TweakList.Items.Add(BuildCard(tw));
+
+        var shown = _listFilter switch
+        {
+            "applied" => items.Where(t => Engine.State(t) == "applied").ToList(),
+            "pending" => items.Where(t => IsPending(Engine.State(t))).ToList(),
+            _ => items
+        };
+        TweakList.Items.Add(FilterBar(items.Count, pending, applied));
+        if (shown.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing matches this filter."), Opacity = 0.5, Margin = new Thickness(2, 10, 0, 0) }); return; }
+        foreach (var tw in shown) TweakList.Items.Add(BuildCard(tw));
+    }
+
+    private FrameworkElement FilterBar(int all, int pending, int applied)
+    {
+        var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+        sp.Children.Add(FilterChip("all", Loc.S("All"), all));
+        sp.Children.Add(FilterChip("pending", Loc.S("Not applied"), pending));
+        sp.Children.Add(FilterChip("applied", Loc.S("Applied"), applied));
+        return sp;
+    }
+
+    private FrameworkElement FilterChip(string key, string label, int n)
+    {
+        bool on = _listFilter == key;
+        var ua = UiAccent;
+        var b = new Border
+        {
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(13, 5, 13, 5),
+            Margin = new Thickness(0, 0, 8, 0),
+            Background = new SolidColorBrush(on ? Color.FromArgb(40, ua.R, ua.G, ua.B) : Color.FromArgb(0, 0, 0, 0)),
+            BorderBrush = new SolidColorBrush(on ? Color.FromArgb(150, ua.R, ua.G, ua.B) : CardBorder),
+            BorderThickness = new Thickness(1),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Child = new TextBlock { Text = $"{label} · {n}", FontSize = 12.5, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Opacity = on ? 1 : 0.72 }
+        };
+        b.MouseLeftButtonUp += (_, e) => { e.Handled = true; _listFilter = key; ShowTweakList(_lastListTitle, _lastListItems); };
+        return b;
     }
 
     private Border BuildCard(Tweak tw)

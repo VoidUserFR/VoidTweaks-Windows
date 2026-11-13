@@ -2178,8 +2178,12 @@
       "requiresAdmin": true,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 1 /f" ],
-      "revert": [ "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 0 /f" ]
+      "apply": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 1 /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem\" /v LongPathsEnabled /t REG_DWORD /d 0 /f"
+      ]
     },
     {
       "id": "perf-auto-maintenance-off",
@@ -2191,8 +2195,12 @@
       "requiresAdmin": true,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 1 /f" ],
-      "revert": [ "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 0 /f" ]
+      "apply": [
+        "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 1 /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\Maintenance\" /v MaintenanceDisabled /t REG_DWORD /d 0 /f"
+      ]
     },
     {
       "id": "perf-reserved-storage-off",
@@ -2204,8 +2212,12 @@
       "requiresAdmin": true,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "DISM /Online /Set-ReservedStorageState /State:Disabled; 'Reserved storage disabled.'" ],
-      "revert": [ "DISM /Online /Set-ReservedStorageState /State:Enabled; 'Reserved storage re-enabled.'" ]
+      "apply": [
+        "DISM /Online /Set-ReservedStorageState /State:Disabled; 'Reserved storage disabled.'"
+      ],
+      "revert": [
+        "DISM /Online /Set-ReservedStorageState /State:Enabled; 'Reserved storage re-enabled.'"
+      ]
     },
     {
       "id": "priv-clipboard-history-on",
@@ -2217,8 +2229,12 @@
       "requiresAdmin": false,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 1 /f" ],
-      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 0 /f" ]
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 1 /f"
+      ],
+      "revert": [
+        "reg add \"HKCU\\Software\\Microsoft\\Clipboard\" /v EnableClipboardHistory /t REG_DWORD /d 0 /f"
+      ]
     },
     {
       "id": "priv-tips-off",
@@ -2230,8 +2246,12 @@
       "requiresAdmin": false,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f" ],
-      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 1 /f" ]
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f"
+      ],
+      "revert": [
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager\" /v SubscribedContent-338389Enabled /t REG_DWORD /d 1 /f"
+      ]
     },
     {
       "id": "priv-edge-preload-off",
@@ -2279,8 +2299,186 @@
       "requiresAdmin": false,
       "needsRestart": false,
       "reversible": true,
-      "apply": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 1 /f" ],
-      "revert": [ "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 0 /f" ]
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 1 /f"
+      ],
+      "revert": [
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\" /v ShowSecondsInSystemClock /t REG_DWORD /d 0 /f"
+      ]
+    },
+    {
+      "id": "priv-wifi-sense-off",
+      "name": "Turn off Wi-Fi Sense",
+      "category": "Privacy",
+      "description": "Stops Windows from auto-connecting to suggested open hotspots and sharing Wi-Fi access.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKLM\\SOFTWARE\\Microsoft\\PolicyManager\\default\\WiFi\\AllowAutoConnectToWiFiSenseHotspots\" /v value /t REG_DWORD /d 0 /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SOFTWARE\\Microsoft\\PolicyManager\\default\\WiFi\\AllowAutoConnectToWiFiSenseHotspots\" /v value /t REG_DWORD /d 1 /f"
+      ]
+    },
+    {
+      "id": "priv-input-personalization-off",
+      "name": "Stop inking & typing data collection",
+      "category": "Privacy",
+      "description": "Disables sending your handwriting and typing samples to Microsoft for personalization.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\" /v RestrictImplicitTextCollection /t REG_DWORD /d 1 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\" /v RestrictImplicitInkCollection /t REG_DWORD /d 1 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore\" /v HarvestContacts /t REG_DWORD /d 0 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\Personalization\\Settings\" /v AcceptedPrivacyPolicy /t REG_DWORD /d 0 /f"
+      ],
+      "revert": [
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\" /v RestrictImplicitTextCollection /t REG_DWORD /d 0 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\" /v RestrictImplicitInkCollection /t REG_DWORD /d 0 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore\" /v HarvestContacts /t REG_DWORD /d 1 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\Personalization\\Settings\" /v AcceptedPrivacyPolicy /t REG_DWORD /d 1 /f"
+      ]
+    },
+    {
+      "id": "priv-voice-activation-off",
+      "name": "Disable 'listen for apps' voice activation",
+      "category": "Privacy",
+      "description": "Stops apps from being able to listen in the background for voice keywords.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\Speech_OneCore\\Settings\\VoiceActivation\\UserPreferenceForAllApps\" /v AgentActivationEnabled /t REG_DWORD /d 0 /f"
+      ],
+      "revert": [
+        "reg add \"HKCU\\Software\\Microsoft\\Speech_OneCore\\Settings\\VoiceActivation\\UserPreferenceForAllApps\" /v AgentActivationEnabled /t REG_DWORD /d 1 /f"
+      ]
+    },
+    {
+      "id": "perf-ndu-off",
+      "name": "Disable Network Data Usage monitor (Ndu)",
+      "category": "Advanced",
+      "description": "Turns off the Ndu driver that tracks per-app network usage. Frees a little RAM; the Settings data-usage graph stops updating.",
+      "impact": "low",
+      "risk": "medium",
+      "requiresAdmin": true,
+      "needsRestart": true,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Ndu\" /v Start /t REG_DWORD /d 4 /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Ndu\" /v Start /t REG_DWORD /d 2 /f"
+      ]
+    },
+    {
+      "id": "perf-svchost-split-off",
+      "name": "Group service host processes",
+      "category": "Advanced",
+      "description": "Stops Windows from splitting every service into its own svchost.exe, so Task Manager is tidier and overhead is slightly lower. Default splits on PCs with >3.5 GB RAM.",
+      "impact": "medium",
+      "risk": "medium",
+      "requiresAdmin": true,
+      "needsRestart": true,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\" /v SvcHostSplitThresholdInKB /t REG_DWORD /d 0xFFFFFFFF /f"
+      ],
+      "revert": [
+        "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\" /v SvcHostSplitThresholdInKB /t REG_DWORD /d 0x380000 /f"
+      ]
+    },
+    {
+      "id": "visual-wallpaper-quality-100",
+      "name": "Full-quality desktop wallpaper",
+      "category": "Visual",
+      "description": "Disables the JPEG re-compression Windows applies to your wallpaper, so it stays crisp.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKCU\\Control Panel\\Desktop\" /v JPEGImportQuality /t REG_DWORD /d 100 /f"
+      ],
+      "revert": [
+        "reg delete \"HKCU\\Control Panel\\Desktop\" /v JPEGImportQuality /f"
+      ]
+    },
+    {
+      "id": "net-max-connections",
+      "name": "More simultaneous download connections",
+      "category": "Network",
+      "description": "Raises the per-server connection limit used by Windows download components, so multi-file downloads can run more streams at once.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v MaxConnectionsPerServer /t REG_DWORD /d 10 /f",
+        "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v MaxConnectionsPer1_0Server /t REG_DWORD /d 10 /f"
+      ],
+      "revert": [
+        "reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v MaxConnectionsPerServer /f",
+        "reg delete \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v MaxConnectionsPer1_0Server /f"
+      ]
+    },
+    {
+      "id": "expl-remove-gallery",
+      "name": "Remove 'Gallery' from Explorer sidebar",
+      "category": "Explorer",
+      "description": "Hides the Windows 11 Gallery shortcut in the File Explorer navigation pane.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": false,
+      "needsRestart": false,
+      "reversible": true,
+      "apply": [
+        "reg add \"HKCU\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}\\ShellFolder\" /v Attributes /t REG_DWORD /d 0xb0940064 /f"
+      ],
+      "revert": [
+        "reg delete \"HKCU\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}\" /f"
+      ]
+    },
+    {
+      "id": "fix-winsock-reset",
+      "name": "Reset Winsock catalog",
+      "category": "Fixes",
+      "description": "Resets the Windows Sockets catalog to defaults. Fixes many 'connected but no internet' and broken-socket issues. Restart afterwards.",
+      "impact": "medium",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": true,
+      "reversible": false,
+      "apply": [
+        "netsh winsock reset"
+      ],
+      "revert": []
+    },
+    {
+      "id": "maint-clear-event-logs",
+      "name": "Clear all Windows event logs",
+      "category": "Maintenance",
+      "description": "Empties every Windows event log. Useful before troubleshooting so new errors are easy to spot. One-way action.",
+      "impact": "low",
+      "risk": "low",
+      "requiresAdmin": true,
+      "needsRestart": false,
+      "reversible": false,
+      "apply": [
+        "wevtutil el | ForEach-Object { try { wevtutil cl $_ } catch {} }"
+      ],
+      "revert": []
     }
   ]
 }
