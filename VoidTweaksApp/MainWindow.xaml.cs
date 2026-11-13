@@ -149,7 +149,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             if (!string.IsNullOrWhiteSpace(latest) && IsNewer(latest, Version))
             {
                 UpdateText.Text = Loc.S("Update available") + $" — v{latest} 🎉";
-                UpdateBtn.Content = Loc.S("Download");
+                UpdateBtn.Content = Loc.S("Download & install");
                 UpdateBar.Visibility = Visibility.Visible;
             }
         }
@@ -166,7 +166,29 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         }
         return false;
     }
-    private void UpdateBtn_Click(object sender, RoutedEventArgs e) => OpenUrl("https://github.com/VoidUserFR/VoidTweaks-Windows/releases/latest");
+    private async void UpdateBtn_Click(object sender, RoutedEventArgs e)
+    {
+        const string releasesPage = "https://github.com/VoidUserFR/VoidTweaks-Windows/releases/latest";
+        try
+        {
+            UpdateBtn.IsEnabled = false;
+            UpdateText.Text = Loc.S("Finding installer…");
+            var url = await Engine.LatestSetupUrl();
+            if (string.IsNullOrWhiteSpace(url)) { OpenUrl(releasesPage); UpdateBtn.IsEnabled = true; return; }
+            UpdateText.Text = Loc.S("Downloading update…");
+            var path = await Engine.DownloadToTempAsync(url, "VoidTweaks-Setup.exe");
+            UpdateText.Text = Loc.S("Starting installer…");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+            System.Windows.Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            Log("Update error: " + ex.Message);
+            UpdateText.Text = Loc.S("Update failed — opening the releases page.");
+            OpenUrl(releasesPage);
+            UpdateBtn.IsEnabled = true;
+        }
+    }
 
     // ---------------- system tray ----------------
     private void InitTray()

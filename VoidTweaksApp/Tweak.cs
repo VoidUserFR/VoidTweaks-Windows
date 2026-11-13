@@ -667,6 +667,40 @@ public static class Engine
         catch { return ""; }
     }
 
+    // The latest release's installer asset (…-Setup.exe) download URL, or "" if none.
+    public static async System.Threading.Tasks.Task<string> LatestSetupUrl()
+    {
+        try
+        {
+            using var http = new System.Net.Http.HttpClient { Timeout = System.TimeSpan.FromSeconds(10) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("VoidTweaks-UpdateCheck");
+            var json = await http.GetStringAsync("https://api.github.com/repos/VoidUserFR/VoidTweaks-Windows/releases/latest");
+            using var doc = JsonDocument.Parse(json);
+            foreach (var a in doc.RootElement.GetProperty("assets").EnumerateArray())
+            {
+                var name = a.GetProperty("name").GetString() ?? "";
+                if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && name.Contains("Setup", StringComparison.OrdinalIgnoreCase))
+                    return a.GetProperty("browser_download_url").GetString() ?? "";
+            }
+        }
+        catch { }
+        return "";
+    }
+
+    // Downloads a URL to %TEMP%\<fileName> and returns the local path. Throws on failure.
+    public static async System.Threading.Tasks.Task<string> DownloadToTempAsync(string url, string fileName)
+    {
+        var dest = Path.Combine(Path.GetTempPath(), fileName);
+        using var http = new System.Net.Http.HttpClient { Timeout = System.TimeSpan.FromMinutes(5) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("VoidTweaks-Updater");
+        using var resp = await http.GetAsync(url, System.Net.Http.HttpCompletionOption.ResponseHeadersRead);
+        resp.EnsureSuccessStatusCode();
+        using (var fs = File.Create(dest))
+        using (var s = await resp.Content.ReadAsStreamAsync())
+            await s.CopyToAsync(fs);
+        return dest;
+    }
+
     public static bool FirstRun()
     {
         var marker = Path.Combine(DataDir, "first-run.done");
