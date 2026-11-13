@@ -494,6 +494,20 @@ public static class Engine
     public static string DeleteOldestRestorePoint()
         => RunOne("try { vssadmin delete shadows /for=$env:SystemDrive /oldest /quiet | Out-Null; 'Oldest restore point deleted.' } catch { 'Could not delete (needs admin, or only one point left): ' + $_.Exception.Message }");
 
+    // Structured restore points: one per line as "seq|yyyy-MM-dd HH:mm|type|description". "NONE" or "ERR: ..." on problems.
+    public static string ListRestorePointsData()
+    {
+        var s = "try { $p = Get-ComputerRestorePoint -ErrorAction Stop | Sort-Object SequenceNumber -Descending | Select-Object -First 20; "
+              + "if(-not $p){ 'NONE' } else { "
+              + "($p | ForEach-Object { '{0}|{1}|{2}|{3}' -f $_.SequenceNumber, ([Management.ManagementDateTimeConverter]::ToDateTime($_.CreationTime).ToString('yyyy-MM-dd HH:mm')), $_.RestorePointType, (($_.Description) -replace '\\|',' ') }) -join \"`n\" } } "
+              + "catch { 'ERR: ' + $_.Exception.Message }";
+        return RunOne(s);
+    }
+
+    // Starts a system restore to the given sequence number. This REBOOTS the PC. Needs admin + System Protection on.
+    public static string RestoreToPoint(int seq)
+        => RunOne($"try {{ Restore-Computer -RestorePoint {seq} -Confirm:$false -ErrorAction Stop; 'Restoring to point #{seq}. Windows will restart now.' }} catch {{ 'Could not start restore (needs admin; System Protection must be on for the system drive): ' + $_.Exception.Message }}");
+
     // ---- health snapshot (one PowerShell spawn, parsed into key=value lines) ----
     public static Dictionary<string, string> HealthFacts()
     {

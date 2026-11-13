@@ -881,6 +881,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     // ---------------- tweak list ----------------
     private string _listFilter = "all";
+    private string _riskFilter = "all";
     private string _lastListTitle = "";
     private List<Tweak> _lastListItems = new();
 
@@ -888,7 +889,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShowTweakList(string title, List<Tweak> items)
     {
-        if (title != _lastListTitle) _listFilter = "all";   // reset filter when navigating to a different list
+        if (title != _lastListTitle) { _listFilter = "all"; _riskFilter = "all"; }   // reset filters when navigating to a different list
         _lastListTitle = title; _lastListItems = items;
 
         int applied = items.Count(t => Engine.State(t) == "applied");
@@ -898,29 +899,71 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         TweakList.Items.Clear();
         if (items.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing here."), Opacity = 0.5, Margin = new Thickness(2, 12, 0, 0) }); return; }
 
-        var shown = _listFilter switch
+        var shown = items.Where(t =>
         {
-            "applied" => items.Where(t => Engine.State(t) == "applied").ToList(),
-            "pending" => items.Where(t => IsPending(Engine.State(t))).ToList(),
-            _ => items
-        };
-        TweakList.Items.Add(FilterBar(items.Count, pending, applied));
+            var s = Engine.State(t);
+            bool stateOk = _listFilter == "all" || (_listFilter == "applied" && s == "applied") || (_listFilter == "pending" && IsPending(s));
+            bool riskOk = _riskFilter == "all" || string.Equals(t.Risk, _riskFilter, StringComparison.OrdinalIgnoreCase);
+            return stateOk && riskOk;
+        }).ToList();
+
+        TweakList.Items.Add(FilterBar(items, shown));
         if (shown.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing matches this filter."), Opacity = 0.5, Margin = new Thickness(2, 10, 0, 0) }); return; }
         foreach (var tw in shown) TweakList.Items.Add(BuildCard(tw));
     }
 
-    private FrameworkElement FilterBar(int all, int pending, int applied)
+    private FrameworkElement FilterBar(List<Tweak> items, List<Tweak> shown)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
-        sp.Children.Add(FilterChip("all", Loc.S("All"), all));
-        sp.Children.Add(FilterChip("pending", Loc.S("Not applied"), pending));
-        sp.Children.Add(FilterChip("applied", Loc.S("Applied"), applied));
-        return sp;
+        int all = items.Count;
+        int pending = items.Count(t => IsPending(Engine.State(t)));
+        int applied = items.Count(t => Engine.State(t) == "applied");
+
+        var outer = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+
+        // row 1: state chips (left) + bulk actions (right)
+        var row1 = new Grid();
+        row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var states = new StackPanel { Orientation = Orientation.Horizontal };
+        states.Children.Add(FilterChip("state", "all", Loc.S("All"), all));
+        states.Children.Add(FilterChip("state", "pending", Loc.S("Not applied"), pending));
+        states.Children.Add(FilterChip("state", "applied", Loc.S("Applied"), applied));
+        Grid.SetColumn(states, 0); row1.Children.Add(states);
+
+        var bulk = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var toApply = shown.Where(t => IsPending(Engine.State(t)) && t.Reversible && t.Apply.Count > 0 && (!t.RequiresAdmin || IsAdmin())).ToList();
+        var toRevert = shown.Where(t => Engine.State(t) == "applied" && t.Reversible && t.Revert.Count > 0 && (!t.RequiresAdmin || IsAdmin())).ToList();
+        if (toApply.Count > 0)
+        {
+            var ab = Btn(Loc.S("Apply all shown") + $" ({toApply.Count})", () => ConfirmBulk(toApply, false));
+            ab.Appearance = Wpf.Ui.Controls.ControlAppearance.Primary; ab.Margin = new Thickness(0, 0, 8, 0);
+            if (_busy) ab.IsEnabled = false;
+            bulk.Children.Add(ab);
+        }
+        if (toRevert.Count > 0)
+        {
+            var rb = Btn(Loc.S("Revert all shown") + $" ({toRevert.Count})", () => ConfirmBulk(toRevert, true));
+            rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
+            if (_busy) rb.IsEnabled = false;
+            bulk.Children.Add(rb);
+        }
+        Grid.SetColumn(bulk, 1); row1.Children.Add(bulk);
+        outer.Children.Add(row1);
+
+        // row 2: risk chips
+        var risks = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+        risks.Children.Add(FilterChip("risk", "all", Loc.S("Any risk"), items.Count));
+        risks.Children.Add(FilterChip("risk", "low", Loc.S("Low"), items.Count(t => t.Risk == "low")));
+        risks.Children.Add(FilterChip("risk", "medium", Loc.S("Medium"), items.Count(t => t.Risk == "medium")));
+        risks.Children.Add(FilterChip("risk", "high", Loc.S("High"), items.Count(t => t.Risk == "high")));
+        outer.Children.Add(risks);
+
+        return outer;
     }
 
-    private FrameworkElement FilterChip(string key, string label, int n)
+    private FrameworkElement FilterChip(string group, string key, string label, int n)
     {
-        bool on = _listFilter == key;
+        bool on = (group == "state" ? _listFilter : _riskFilter) == key;
         var ua = UiAccent;
         var b = new Border
         {
@@ -933,8 +976,22 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             Cursor = System.Windows.Input.Cursors.Hand,
             Child = new TextBlock { Text = $"{label} · {n}", FontSize = 12.5, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Opacity = on ? 1 : 0.72 }
         };
-        b.MouseLeftButtonUp += (_, e) => { e.Handled = true; _listFilter = key; ShowTweakList(_lastListTitle, _lastListItems); };
+        b.MouseLeftButtonUp += (_, e) => { e.Handled = true; if (group == "state") _listFilter = key; else _riskFilter = key; ShowTweakList(_lastListTitle, _lastListItems); };
         return b;
+    }
+
+    private void ConfirmBulk(List<Tweak> set, bool revert)
+    {
+        if (set.Count == 0) return;
+        if (_busy) { Log("Busy — wait for the current action to finish."); return; }
+        var verb = revert ? Loc.S("revert") : Loc.S("apply");
+        var names = string.Join("\n", set.Take(12).Select(t => "• " + Loc.T("tw." + t.Id, t.Name)));
+        if (set.Count > 12) names += "\n" + string.Format(Loc.S("…and {0} more"), set.Count - 12);
+        bool reboot = set.Any(t => t.NeedsRestart);
+        var msg = string.Format(Loc.S("About to {0} {1} tweak(s):\n\n{2}\n\nEach is reversible. Continue?"), verb, set.Count, names)
+                + (reboot ? "\n\n" + Loc.S("Some need a restart to fully take effect.") : "");
+        if (System.Windows.MessageBox.Show(this, msg, Loc.S("VoidTweaks — Bulk action"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) != System.Windows.MessageBoxResult.Yes) return;
+        RunMany(set.ToArray(), revert, (revert ? "revert all: " : "apply all: ") + set.Count);
     }
 
     private Border BuildCard(Tweak tw)
@@ -2384,11 +2441,12 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         make.Children.Add(mb);
         TweakList.Items.Add(Card(make));
 
-        var list = Section("Recent restore points", "The last 10 snapshots on this PC.");
-        var listTxt = new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.78, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas"), LineHeight = 20 };
-        list.Children.Add(listTxt);
+        var list = Section("Restore points", "Your recent snapshots. Restoring rolls Windows back to that moment and restarts the PC — your personal files are untouched.");
+        var rpHost = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+        rpHost.Children.Add(new TextBlock { Text = Loc.S("Reading…"), Opacity = 0.7, FontSize = 12.5 });
+        list.Children.Add(rpHost);
         TweakList.Items.Add(Card(list));
-        RunAsync(Engine.ListRestorePoints, listTxt);
+        LoadRestorePoints(rpHost);
 
         var roll = Section("Roll back", "Opens Windows System Restore so you can pick a point and revert. VoidTweaks never rolls back silently — you confirm it there.");
         var rb = Btn("Open System Restore", () => Engine.OpenRestoreUi()); rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary;
@@ -2403,6 +2461,74 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         drow.Children.Add(dOld); drow.Children.Add(dAll);
         del.Children.Add(drow);
         TweakList.Items.Add(Card(del));
+    }
+
+    private void LoadRestorePoints(Panel host)
+    {
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var raw = Engine.ListRestorePointsData();
+            Dispatcher.Invoke(() =>
+            {
+                host.Children.Clear();
+                var t = (raw ?? "").Trim();
+                if (t.Length == 0 || t == "NONE") { host.Children.Add(new TextBlock { Text = Loc.S("No restore points yet. Create one above for a safety net."), Opacity = 0.6, FontSize = 12.5, TextWrapping = TextWrapping.Wrap }); return; }
+                if (t.StartsWith("ERR:")) { host.Children.Add(new TextBlock { Text = Loc.S("Couldn't read restore points — System Protection may be off, or this needs administrator."), Opacity = 0.6, FontSize = 12.5, TextWrapping = TextWrapping.Wrap }); return; }
+                int n = 0;
+                foreach (var line in t.Replace("\r", "").Split('\n'))
+                {
+                    var p = line.Split('|');
+                    if (p.Length < 4 || !int.TryParse(p[0].Trim(), out var seq)) continue;
+                    host.Children.Add(RestorePointCard(seq, p[1].Trim(), p[2].Trim(), p[3].Trim()));
+                    n++;
+                }
+                if (n == 0) host.Children.Add(new TextBlock { Text = Loc.S("No restore points yet. Create one above for a safety net."), Opacity = 0.6, FontSize = 12.5 });
+            });
+        });
+    }
+
+    private static string RestoreTypeName(string type) => type switch
+    {
+        "0" => "App install",
+        "1" => "App uninstall",
+        "10" => "Driver install",
+        "12" => "Settings change",
+        "13" => "Cancelled",
+        _ => "Restore point"
+    };
+
+    private Border RestorePointCard(int seq, string time, string type, string desc)
+    {
+        var grid = TwoCol();
+        var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        left.Children.Add(new TextBlock { Text = desc.Length > 0 ? desc : ("Restore point #" + seq), FontSize = 14.5, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+        var meta = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 7) };
+        meta.Children.Add(new TextBlock { Text = time, Opacity = 0.62, FontSize = 12 });
+        meta.Children.Add(new TextBlock { Text = "  ·  #" + seq, Opacity = 0.5, FontSize = 12 });
+        left.Children.Add(meta);
+        var tagRow = new StackPanel { Orientation = Orientation.Horizontal };
+        tagRow.Children.Add(Badge(RestoreTypeName(type), C(0x5B, 0x9B, 0xFF)));
+        left.Children.Add(tagRow);
+        Grid.SetColumn(left, 0); grid.Children.Add(left);
+
+        var rb = Btn("Restore to this", () => ConfirmRestoreTo(seq, time, desc));
+        rb.Appearance = Wpf.Ui.Controls.ControlAppearance.Danger;
+        rb.VerticalAlignment = VerticalAlignment.Center;
+        if (!IsAdmin()) { rb.IsEnabled = false; rb.ToolTip = Loc.S("Needs administrator"); }
+        Grid.SetColumn(rb, 1); grid.Children.Add(rb);
+        return Card(grid);
+    }
+
+    private void ConfirmRestoreTo(int seq, string time, string desc)
+    {
+        var what = desc.Length > 0 ? desc : ("Restore point #" + seq);
+        var msg = string.Format(
+            Loc.S("Roll Windows back to this restore point?\n\n{0}\n{1}  (#{2})\n\nApps and drivers installed since then are removed; your personal files are not affected. Your PC will RESTART immediately to finish — save your work first."),
+            what, time, seq);
+        if (System.Windows.MessageBox.Show(this, msg, Loc.S("VoidTweaks — System Restore"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) != System.Windows.MessageBoxResult.Yes) return;
+        Log("=== restore to point #" + seq + " ===");
+        SetBusy(true);
+        System.Threading.Tasks.Task.Run(() => { var r = Engine.RestoreToPoint(seq); Dispatcher.Invoke(() => { Log(r); SetBusy(false); ShowToast(Loc.S("Restoring…")); }); });
     }
 
     private void ConfirmDeleteRestore(bool all)
