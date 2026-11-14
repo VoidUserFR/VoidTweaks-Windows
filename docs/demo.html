@@ -285,6 +285,7 @@ if(reduce){ // designed end frame: everything applied, Performance open
   APPLIED.add(0); APPLIED.add(2); si=STEPS.length-1; mark(); STEPS[si].view(STEPS[si].dur);
 }
 requestAnimationFrame(tick);
+window.__reset = () => jump(0);   // used by the GIF recorder to start a clean loop
 </script>
 </body>
 </html>
