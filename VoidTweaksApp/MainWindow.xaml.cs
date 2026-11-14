@@ -686,11 +686,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         try
         {
-            var a = new System.Windows.Media.Animation.DoubleAnimation(0.0, 1.0, System.TimeSpan.FromMilliseconds(190)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
+            var a = new System.Windows.Media.Animation.DoubleAnimation(0.0, 1.0, System.TimeSpan.FromMilliseconds(170)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
             TweakList.BeginAnimation(OpacityProperty, a);
-            if (TweakList.RenderTransform is not TranslateTransform tt) { tt = new TranslateTransform(); TweakList.RenderTransform = tt; }
-            var slide = new System.Windows.Media.Animation.DoubleAnimation(14, 0, System.TimeSpan.FromMilliseconds(260)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
-            tt.BeginAnimation(TranslateTransform.YProperty, slide);
         }
         catch { }
     }
@@ -1034,7 +1031,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
         TweakList.Items.Add(FilterBar(items, shown));
         if (shown.Count == 0) { TweakList.Items.Add(new TextBlock { Text = Loc.S("Nothing matches this filter."), Opacity = 0.5, Margin = new Thickness(2, 10, 0, 0) }); return; }
-        foreach (var tw in shown) TweakList.Items.Add(BuildCard(tw));
+        int idx = 0;
+        foreach (var tw in shown) { var card = BuildCard(tw); TweakList.Items.Add(card); AnimateIn(card, idx++); }
+    }
+
+    // staggered entrance: each card fades + slides up, slightly after the one before it
+    private void AnimateIn(FrameworkElement el, int index)
+    {
+        try
+        {
+            el.Opacity = 0;
+            var tt = new TranslateTransform(0, 16);
+            el.RenderTransform = tt;
+            var delay = System.TimeSpan.FromMilliseconds(System.Math.Min(index, 14) * 32);
+            var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(0, 1, System.TimeSpan.FromMilliseconds(240)) { BeginTime = delay, EasingFunction = ease };
+            var slide = new System.Windows.Media.Animation.DoubleAnimation(16, 0, System.TimeSpan.FromMilliseconds(320)) { BeginTime = delay, EasingFunction = ease };
+            el.BeginAnimation(OpacityProperty, fade);
+            tt.BeginAnimation(TranslateTransform.YProperty, slide);
+        }
+        catch { }
     }
 
     private FrameworkElement FilterBar(List<Tweak> items, List<Tweak> shown)
