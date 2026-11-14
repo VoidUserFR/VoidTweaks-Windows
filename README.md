@@ -51,6 +51,10 @@ Most "PC optimizers" are closed boxes: they hide what they change, nag you to pa
 
 **NullZone** — the new default look: a three-pane layout (icon rail → category column → content) with an animated black-hole background.
 
+<img src="docs/demo.gif" width="880" alt="VoidTweaks NullZone demo — open Performance, apply tweaks, scan"/>
+
+<sub>↑ animated preview · open Performance → apply tweaks (they glow green) → scan</sub>
+
 <img src="docs/img/home.png" width="880"/>
 
 </div>
