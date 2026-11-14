@@ -563,6 +563,10 @@ public static class Engine
     }
     public static void ClearBenchmarks() { try { if (File.Exists(BenchPath)) File.Delete(BenchPath); } catch { } }
 
+    private static string LogBarPath => Path.Combine(DataDir, "logbar.txt");
+    public static bool GetLogBarVisible() { try { return !(File.Exists(LogBarPath) && File.ReadAllText(LogBarPath).Trim() == "0"); } catch { return true; } }
+    public static void SetLogBarVisible(bool v) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(LogBarPath, v ? "1" : "0"); } catch { } }
+
     private static string WindowPath => Path.Combine(DataDir, "window.txt");
     public static string GetWindowState() { try { return File.Exists(WindowPath) ? File.ReadAllText(WindowPath).Trim() : ""; } catch { return ""; } }
     public static void SetWindowState(string s) { try { Directory.CreateDirectory(DataDir); File.WriteAllText(WindowPath, s); } catch { } }

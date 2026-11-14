@@ -134,6 +134,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             ApplyStyle(Engine.GetStyle() is { Length: > 0 } st ? st : "obsidian");
             CheckUpdates();
             if (Engine.FirstRun()) FirstRunTour();
+            InitLogBar();
+            InitLogoTilt();
             // initial background scan so non-registry tweak statuses (debloat, power, boot…) resolve automatically
             System.Threading.Tasks.Task.Run(() => { Engine.RefreshScan(); Dispatcher.Invoke(Render); });
         };
@@ -679,14 +681,113 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         Fade();
     }
 
+    // tab-switch transition: content fades in while sliding up a touch
     private void Fade()
     {
         try
         {
-            var a = new System.Windows.Media.Animation.DoubleAnimation(0.0, 1.0, System.TimeSpan.FromMilliseconds(160)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
+            var a = new System.Windows.Media.Animation.DoubleAnimation(0.0, 1.0, System.TimeSpan.FromMilliseconds(190)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
             TweakList.BeginAnimation(OpacityProperty, a);
+            if (TweakList.RenderTransform is not TranslateTransform tt) { tt = new TranslateTransform(); TweakList.RenderTransform = tt; }
+            var slide = new System.Windows.Media.Animation.DoubleAnimation(14, 0, System.TimeSpan.FromMilliseconds(260)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } };
+            tt.BeginAnimation(TranslateTransform.YProperty, slide);
         }
         catch { }
+    }
+
+    // apply/revert feedback: a quick scale pop on the content (green-ish up, red-ish down)
+    private void PulseContent(bool revert)
+    {
+        try
+        {
+            if (ContentScroll.RenderTransform is not ScaleTransform st) { st = new ScaleTransform(1, 1); ContentScroll.RenderTransformOrigin = new Point(0.5, 0.5); ContentScroll.RenderTransform = st; }
+            double peak = revert ? 0.985 : 1.012;
+            var anim = new System.Windows.Media.Animation.DoubleAnimationUsingKeyFrames { Duration = System.TimeSpan.FromMilliseconds(300) };
+            anim.KeyFrames.Add(new System.Windows.Media.Animation.EasingDoubleKeyFrame(peak, System.Windows.Media.Animation.KeyTime.FromTimeSpan(System.TimeSpan.FromMilliseconds(120)), new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }));
+            anim.KeyFrames.Add(new System.Windows.Media.Animation.EasingDoubleKeyFrame(1.0, System.Windows.Media.Animation.KeyTime.FromTimeSpan(System.TimeSpan.FromMilliseconds(300)), new System.Windows.Media.Animation.BackEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut, Amplitude = 0.5 }));
+            st.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
+            st.BeginAnimation(ScaleTransform.ScaleYProperty, anim.Clone());
+        }
+        catch { }
+    }
+
+    // ---------- output-log show/hide ----------
+    private bool _logVisible = true;
+    private void InitLogBar()
+    {
+        _logVisible = Engine.GetLogBarVisible();
+        OutputRow.Height = _logVisible ? new GridLength(146) : new GridLength(0);
+        OutputPanel.Visibility = _logVisible ? Visibility.Visible : Visibility.Collapsed;
+        LogToggleBtn.Content = _logVisible ? "▭ Hide log" : "▭ Show log";
+    }
+    private void LogToggleBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _logVisible = !_logVisible;
+        Engine.SetLogBarVisible(_logVisible);
+        LogToggleBtn.Content = _logVisible ? "▭ Hide log" : "▭ Show log";
+        if (_logVisible)
+        {
+            OutputRow.Height = new GridLength(146);
+            OutputPanel.Visibility = Visibility.Visible;
+            OutputPanel.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, System.TimeSpan.FromMilliseconds(200)));
+            if (OutputPanel.RenderTransform is not TranslateTransform t2) { t2 = new TranslateTransform(); OutputPanel.RenderTransform = t2; }
+            t2.BeginAnimation(TranslateTransform.YProperty, new System.Windows.Media.Animation.DoubleAnimation(24, 0, System.TimeSpan.FromMilliseconds(260)) { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } });
+        }
+        else
+        {
+            var fade = new System.Windows.Media.Animation.DoubleAnimation(1, 0, System.TimeSpan.FromMilliseconds(160));
+            fade.Completed += (_, _) => { OutputPanel.Visibility = Visibility.Collapsed; OutputRow.Height = new GridLength(0); };
+            OutputPanel.BeginAnimation(OpacityProperty, fade);
+        }
+    }
+
+    // ---------- "3D" tilt on the brand logo (follows the cursor, springs back) ----------
+    private void InitLogoTilt()
+    {
+        var skew = new SkewTransform(0, 0);
+        var scale = new ScaleTransform(1, 1);
+        var translate = new TranslateTransform(0, 0);
+        var tg = new TransformGroup();
+        tg.Children.Add(skew); tg.Children.Add(scale); tg.Children.Add(translate);
+        BrandLogo.RenderTransform = tg;
+        var shadow = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Black, BlurRadius = 0, ShadowDepth = 0, Opacity = 0 };
+        BrandLogo.Effect = shadow;
+
+        void Release(System.Windows.DependencyObject o, System.Windows.DependencyProperty p) { (o as System.Windows.Media.Animation.IAnimatable)?.BeginAnimation(p, null); }
+
+        BrandLogo.MouseEnter += (_, _) =>
+        {
+            Release(skew, SkewTransform.AngleXProperty); Release(skew, SkewTransform.AngleYProperty);
+            Release(scale, ScaleTransform.ScaleXProperty); Release(scale, ScaleTransform.ScaleYProperty);
+            Release(translate, TranslateTransform.XProperty); Release(translate, TranslateTransform.YProperty);
+            Release(shadow, System.Windows.Media.Effects.DropShadowEffect.BlurRadiusProperty); Release(shadow, System.Windows.Media.Effects.DropShadowEffect.OpacityProperty); Release(shadow, System.Windows.Media.Effects.DropShadowEffect.ShadowDepthProperty);
+            scale.ScaleX = scale.ScaleY = 1.14;
+            shadow.BlurRadius = 16; shadow.Opacity = 0.5; shadow.ShadowDepth = 6;
+        };
+        BrandLogo.MouseMove += (_, ev) =>
+        {
+            var pt = ev.GetPosition(BrandLogo);
+            double cx = BrandLogo.ActualWidth / 2, cy = BrandLogo.ActualHeight / 2;
+            if (cx <= 0 || cy <= 0) return;
+            double dx = (pt.X - cx) / cx, dy = (pt.Y - cy) / cy;   // -1..1
+            skew.AngleX = -dy * 11; skew.AngleY = dx * 11;         // twist toward the cursor
+            translate.X = dx * 3; translate.Y = dy * 3;
+        };
+        BrandLogo.MouseLeave += (_, _) =>
+        {
+            var back = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+            var spring = new System.Windows.Media.Animation.BackEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut, Amplitude = 0.6 };
+            System.Windows.Media.Animation.DoubleAnimation A(double to, int ms, System.Windows.Media.Animation.IEasingFunction ez) => new(to, System.TimeSpan.FromMilliseconds(ms)) { EasingFunction = ez };
+            skew.BeginAnimation(SkewTransform.AngleXProperty, A(0, 420, spring));
+            skew.BeginAnimation(SkewTransform.AngleYProperty, A(0, 420, spring));
+            translate.BeginAnimation(TranslateTransform.XProperty, A(0, 420, spring));
+            translate.BeginAnimation(TranslateTransform.YProperty, A(0, 420, spring));
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, A(1, 300, back));
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, A(1, 300, back));
+            shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.BlurRadiusProperty, A(0, 300, back));
+            shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, A(0, 300, back));
+            shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.ShadowDepthProperty, A(0, 300, back));
+        };
     }
 
     // NullZone (obsidian) is near-monochrome: the UI chrome (nav, section bars, rail) uses a neutral
@@ -2746,6 +2847,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
                 try { Engine.RecordHistory(set.Where(t => (revert ? t.Revert.Count : t.Apply.Count) > 0 && (revert || !t.RequiresAdmin || IsAdmin())).Select(t => (t.Id, t.Name)), revert ? "revert" : "apply"); } catch { }
                 SetBusy(false);
                 Render();
+                PulseContent(revert);
                 ShowToast((revert ? Loc.S("Reverted") : Loc.S("Applied")) + " ✓");
             });
         });

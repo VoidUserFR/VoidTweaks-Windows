@@ -79,7 +79,7 @@
 
       <DockPanel Grid.Column="1" Margin="0,0,0,8">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,2,0,8">
-          <Border Width="36" Height="36" CornerRadius="10" Background="#FF060608" Margin="0,0,11,0">
+          <Border x:Name="BrandLogo" Width="36" Height="36" CornerRadius="10" Background="#FF060608" Margin="0,0,11,0" RenderTransformOrigin="0.5,0.5" Cursor="Hand">
             <Grid>
               <Ellipse Width="31" Height="31" Stroke="#26FFFFFF" StrokeThickness="1" StrokeDashArray="2 2" HorizontalAlignment="Center" VerticalAlignment="Center" />
               <Ellipse Width="22" Height="22" Stroke="White" StrokeThickness="1.7" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -105,7 +105,7 @@
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
           <RowDefinition Height="*" />
-          <RowDefinition Height="146" />
+          <RowDefinition x:Name="OutputRow" Height="146" />
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="20,0,20,6">
           <StackPanel Orientation="Horizontal">
@@ -121,13 +121,14 @@
             <ui:Button x:Name="RevertAllBtn" Content="Revert all" Appearance="Danger" Margin="0,0,8,6" Click="RevertAllBtn_Click" />
             <ui:Button x:Name="UndoBtn" Content="Undo last" IsEnabled="False" Margin="0,0,16,6" Click="UndoBtn_Click" />
             <CheckBox x:Name="RestoreCheck" Content="Restore point first" IsChecked="True" VerticalAlignment="Center" Margin="0,0,14,6" />
-            <CheckBox x:Name="DryCheck" Content="Dry run" VerticalAlignment="Center" Margin="0,0,0,6" />
+            <CheckBox x:Name="DryCheck" Content="Dry run" VerticalAlignment="Center" Margin="0,0,14,6" />
+            <ui:Button x:Name="LogToggleBtn" Content="▭ Hide log" Margin="0,0,0,6" Click="LogToggleBtn_Click" ToolTip="Show or hide the output log at the bottom" />
           </WrapPanel>
         </StackPanel>
         <ScrollViewer x:Name="ContentScroll" Grid.Row="1" Padding="20,2,14,12" CanContentScroll="False" local:SmoothScroll.Enabled="True" VerticalScrollBarVisibility="Auto">
           <ItemsControl x:Name="TweakList" />
         </ScrollViewer>
-        <Border Grid.Row="2" Background="#33000000" Margin="14,4,14,14" CornerRadius="10" Padding="12">
+        <Border x:Name="OutputPanel" Grid.Row="2" Background="#33000000" Margin="14,4,14,14" CornerRadius="10" Padding="12" RenderTransformOrigin="0.5,1">
           <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="Output log" FontSize="11" Opacity="0.5" Margin="0,0,0,4" />
             <ScrollViewer>
