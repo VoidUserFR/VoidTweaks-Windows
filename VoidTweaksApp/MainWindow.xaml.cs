@@ -134,6 +134,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             ApplyStyle(Engine.GetStyle() is { Length: > 0 } st ? st : "obsidian");
             CheckUpdates();
             if (Engine.FirstRun()) FirstRunTour();
+            // initial background scan so non-registry tweak statuses (debloat, power, boot…) resolve automatically
+            System.Threading.Tasks.Task.Run(() => { Engine.RefreshScan(); Dispatcher.Invoke(Render); });
         };
         var did = Engine.GetDiscordId();
         if (!string.IsNullOrWhiteSpace(did)) System.Threading.Tasks.Task.Run(() => StartRpc(did));
@@ -2805,7 +2807,15 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             });
         });
     }
-    private void ScanBtn_Click(object sender, RoutedEventArgs e) => Render();
+    private async void ScanBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var old = ScanBtn.Content;
+        ScanBtn.Content = Loc.S("Scanning…"); ScanBtn.IsEnabled = false;
+        await System.Threading.Tasks.Task.Run(() => Engine.RefreshScan());
+        ScanBtn.Content = old; ScanBtn.IsEnabled = true;
+        Render();
+        ShowToast(Loc.S("Scan complete ✓"));
+    }
     private void ApplyAllBtn_Click(object sender, RoutedEventArgs e) { var s = CurrentTweaks(); if (s.Count > 0) RunMany(s, false, "apply all: " + _sel); }
     private void RevertAllBtn_Click(object sender, RoutedEventArgs e) { var s = CurrentTweaks(); if (s.Count > 0) RunMany(s, true, "revert all: " + _sel); }
     private void UndoBtn_Click(object sender, RoutedEventArgs e)

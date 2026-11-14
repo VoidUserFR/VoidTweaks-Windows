@@ -200,6 +200,45 @@ public static class Engine
     }
 
     // Basic status detection for registry tweaks: reg add "KEY" /v NAME /t TYPE /d VAL /f
+    // ---- scan cache for non-registry tweaks (populated by RefreshScan, read by State) ----
+    public static bool ScanReady { get; private set; }
+    private static HashSet<string> _appx = new(StringComparer.OrdinalIgnoreCase);
+    private static string _powerActive = "", _bcdedit = "";
+    private static bool? _mm = null;
+
+    // One PowerShell spawn gathers everything State() can't read from the registry: installed Appx
+    // packages, the active power scheme, boot-config values, and memory-compression state.
+    public static void RefreshScan()
+    {
+        try
+        {
+            var cmd = "Write-Output '###APPX'; Get-AppxPackage | ForEach-Object { $_.Name }; "
+                    + "Write-Output '###POWER'; powercfg /getactivescheme; "
+                    + "Write-Output '###BCD'; bcdedit /enum '{current}'; "
+                    + "Write-Output '###MM'; try { [string](Get-MMAgent).MemoryCompression } catch {}; "
+                    + "Write-Output '###END'";
+            var outp = RunOne(cmd);
+            var appx = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var bcd = new System.Text.StringBuilder();
+            string power = ""; bool? mm = null; string sec = "";
+            foreach (var raw in (outp ?? "").Replace("\r", "").Split('\n'))
+            {
+                var line = raw;
+                if (line.StartsWith("###")) { sec = line; continue; }
+                switch (sec)
+                {
+                    case "###APPX": if (line.Trim().Length > 0) appx.Add(line.Trim()); break;
+                    case "###POWER": power += line + " "; break;
+                    case "###BCD": bcd.AppendLine(line); break;
+                    case "###MM": var m = line.Trim(); if (m.Length > 0 && mm == null) mm = m.Equals("True", StringComparison.OrdinalIgnoreCase); break;
+                }
+            }
+            _appx = appx; _powerActive = power; _bcdedit = bcd.ToString(); _mm = mm;
+            ScanReady = true;
+        }
+        catch { }
+    }
+
     public static string State(Tweak t)
     {
         if (Actions.Contains(t.Id)) return "action";
@@ -213,8 +252,10 @@ public static class Engine
             if (long.TryParse(cur, out var a) && long.TryParse(want, out var b)) return a == b ? "applied" : "custom";
             return string.Equals(cur, want, StringComparison.OrdinalIgnoreCase) ? "applied" : "custom";
         }
-        // service tweaks: Set-Service -Name X -StartupType Disabled/Automatic/Manual  -> registry Start value
         var joined = string.Join(" ", t.Apply);
+        var first = t.Apply.Count > 0 ? t.Apply[0] : "";
+
+        // service tweaks: Set-Service -Name X -StartupType ...  -> registry Start value
         var svc = Regex.Match(joined, @"Set-Service -Name (\w+) -StartupType (\w+)");
         if (svc.Success)
         {
@@ -225,7 +266,77 @@ public static class Engine
                 return sv == want ? "applied" : "default";
             }
         }
+
+        // reg add that only creates a key (no /d value) -> applied when the key exists
+        var addKey = Regex.Match(first, @"^reg add ""([^""]+)""", RegexOptions.IgnoreCase);
+        if (addKey.Success && !Regex.IsMatch(first, @"\s/d\s", RegexOptions.IgnoreCase))
+            return RegKeyExists(addKey.Groups[1].Value) ? "applied" : "default";
+        // reg delete a value -> applied when it's gone
+        var delVal = Regex.Match(first, @"^reg delete ""([^""]+)"" /v (\S+) /f", RegexOptions.IgnoreCase);
+        if (delVal.Success)
+            return ReadReg(delVal.Groups[1].Value, delVal.Groups[2].Value) == null ? "applied" : "default";
+        // reg delete a key -> applied when it's gone
+        var delKey = Regex.Match(first, @"^reg delete ""([^""]+)"" /f", RegexOptions.IgnoreCase);
+        if (delKey.Success)
+            return RegKeyExists(delKey.Groups[1].Value) ? "default" : "applied";
+
+        // powercfg /hibernate off -> registry HibernateEnabled == 0 (fast, no scan needed)
+        if (Regex.IsMatch(joined, @"powercfg\s+/?hibernate\s+off", RegexOptions.IgnoreCase))
+        {
+            var he = ReadReg("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power", "HibernateEnabled");
+            return he == null ? "na" : (he == "0" ? "applied" : "default");
+        }
+
+        // ---- the rest need a scan; show "na" (neutral) until one has run ----
+        // Appx debloat: Get-AppxPackage *X* | Remove-AppxPackage  -> applied when the package is gone
+        if (joined.Contains("Remove-AppxPackage"))
+        {
+            var mp = Regex.Match(joined, @"Get-AppxPackage\s+\*?([A-Za-z0-9._]+?)\*?\s*\|");
+            if (mp.Success)
+            {
+                if (!ScanReady) return "na";
+                var pat = mp.Groups[1].Value;
+                return _appx.Any(n => n.IndexOf(pat, StringComparison.OrdinalIgnoreCase) >= 0) ? "default" : "applied";
+            }
+        }
+        // powercfg /setactive GUID -> active scheme matches
+        var pm = Regex.Match(joined, @"powercfg\s+/setactive\s+([0-9a-fA-F-]{36})", RegexOptions.IgnoreCase);
+        if (pm.Success)
+            return !ScanReady ? "na" : (_powerActive.IndexOf(pm.Groups[1].Value, StringComparison.OrdinalIgnoreCase) >= 0 ? "applied" : "default");
+        // bcdedit /set KEY VALUE -> boot config shows it
+        var bs = Regex.Match(joined, @"bcdedit\s+/set\s+(\w+)\s+(\w+)", RegexOptions.IgnoreCase);
+        if (bs.Success)
+            return !ScanReady ? "na" : (Regex.IsMatch(_bcdedit, @"(?im)^\s*" + Regex.Escape(bs.Groups[1].Value) + @"\s+" + Regex.Escape(bs.Groups[2].Value) + @"\b") ? "applied" : "default");
+        // bcdedit /deletevalue KEY -> applied when the key is absent
+        var bd = Regex.Match(joined, @"bcdedit\s+/deletevalue\s+(\w+)", RegexOptions.IgnoreCase);
+        if (bd.Success)
+            return !ScanReady ? "na" : (Regex.IsMatch(_bcdedit, @"(?im)^\s*" + Regex.Escape(bd.Groups[1].Value) + @"\b") ? "default" : "applied");
+        // Disable-MMAgent -MemoryCompression -> MemoryCompression is False
+        if (joined.Contains("Disable-MMAgent", StringComparison.OrdinalIgnoreCase) && joined.Contains("MemoryCompression", StringComparison.OrdinalIgnoreCase))
+            return !ScanReady || _mm == null ? "na" : (_mm == false ? "applied" : "default");
+
         return "na";
+    }
+
+    private static bool RegKeyExists(string keyPath)
+    {
+        try
+        {
+            int i = keyPath.IndexOf('\\');
+            if (i < 0) return false;
+            string root = keyPath.Substring(0, i).ToUpperInvariant();
+            string sub = keyPath.Substring(i + 1);
+            Microsoft.Win32.RegistryKey baseKey = root switch
+            {
+                "HKLM" or "HKEY_LOCAL_MACHINE" => Microsoft.Win32.Registry.LocalMachine,
+                "HKCU" or "HKEY_CURRENT_USER" => Microsoft.Win32.Registry.CurrentUser,
+                "HKCR" or "HKEY_CLASSES_ROOT" => Microsoft.Win32.Registry.ClassesRoot,
+                _ => Microsoft.Win32.Registry.CurrentUser
+            };
+            using var k = baseKey.OpenSubKey(sub);
+            return k != null;
+        }
+        catch { return false; }
     }
 
     public static readonly HashSet<string> Critical = new(StringComparer.OrdinalIgnoreCase)
