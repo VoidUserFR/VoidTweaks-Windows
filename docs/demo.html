@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidTweaks — demo</title>
+<style>
+  /* ---- all classes prefixed vtd- (one window, one prefix) ---- */
+  :root { --k: 1; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #0a0b0f; color: #eef0f5; font-family: "Segoe UI", system-ui, sans-serif; }
+  .vtd-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .vtd-frame { position: relative; width: 100%; aspect-ratio: 1200 / 750;
+    border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px #000a, 0 0 0 1px #ffffff14; background: #0a0b0f; }
+  .vtd-stage { position: absolute; top: 0; left: 0; width: 1200px; height: 750px; transform-origin: 0 0; transform: scale(var(--k)); }
+
+  /* graphite animated background + stars */
+  .vtd-bg { position: absolute; inset: 0; background:
+      radial-gradient(1100px 760px at 42% 36%, #14171d 0%, #0b0d12 55%, #060609 100%); }
+  .vtd-glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; }
+  .vtd-g1 { width: 320px; height: 320px; left: 10%; top: 30%; background: #2a3140; animation: vtd-drift1 13s ease-in-out infinite; }
+  .vtd-g2 { width: 220px; height: 220px; right: 14%; bottom: 10%; background: #20303a; animation: vtd-drift2 17s ease-in-out infinite; }
+  @keyframes vtd-drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+  @keyframes vtd-drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-36px,24px)} }
+  .vtd-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #eaeef8; opacity: .5; }
+
+  /* blackhole, lower-left */
+  .vtd-hole { position: absolute; left: 36px; bottom: 150px; width: 200px; height: 200px; }
+  .vtd-ring { position: absolute; inset: 0; margin: auto; border-radius: 50%; }
+  .vtd-core { width: 110px; height: 110px; border: 3px solid #fff; box-shadow: 0 0 22px #fff8, inset 0 0 16px #0009;
+     background: radial-gradient(circle,#0a0b10 48%, #000 70%); }
+  .vtd-r1 { width: 150px; height: 150px; border: 1.5px dashed #ffffff55; animation: vtd-spin 24s linear infinite; }
+  .vtd-r2 { width: 190px; height: 190px; border: 1px dashed #ffffff33; animation: vtd-spin 40s linear infinite reverse; }
+  @keyframes vtd-spin { to { transform: rotate(360deg); } }
+
+  /* chrome */
+  .vtd-top { position: absolute; left: 0; right: 0; top: 0; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; }
+  .vtd-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .vtd-title { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; opacity: .6; }
+
+  /* three-pane */
+  .vtd-rail { position: absolute; left: 0; top: 40px; bottom: 0; width: 66px; display: flex; flex-direction: column;
+     align-items: center; gap: 6px; padding-top: 14px; }
+  .vtd-ri { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 19px; opacity: .55; color: #cfd4de;
+     border: 1px solid transparent; transition: background .2s, opacity .2s, border-color .2s; }
+  .vtd-ri.on { background: #ffffff14; opacity: 1; border-color: #ffffff22; }
+
+  .vtd-nav { position: absolute; left: 66px; top: 40px; bottom: 0; width: 212px; padding: 14px 10px; }
+  .vtd-brand { display: flex; align-items: center; gap: 10px; margin: 2px 4px 12px; }
+  .vtd-blogo { width: 34px; height: 34px; border-radius: 10px; background: #060608; display: grid; place-items: center; }
+  .vtd-blogo i { width: 20px; height: 20px; border-radius: 50%; border: 1.6px solid #fff; box-shadow: 0 0 7px #fff9; display: block; }
+  .vtd-bt { font-weight: 800; font-size: 15px; } .vtd-bs { font-size: 9.5px; opacity: .45; }
+  .vtd-ni { padding: 9px 12px; border-radius: 10px; font-size: 13px; opacity: .72; color: #e7e9f0; margin-bottom: 2px; transition: background .2s, opacity .2s; }
+  .vtd-ni.on { background: #ffffff1c; opacity: 1; font-weight: 600; }
+
+  .vtd-main { position: absolute; left: 278px; right: 0; top: 40px; bottom: 0; padding: 14px 22px; }
+  .vtd-h1 { font-size: 25px; font-weight: 800; }
+  .vtd-sub { font-size: 12.5px; opacity: .6; margin: 3px 0 10px; }
+  .vtd-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .vtd-btn { font-size: 12.5px; padding: 7px 13px; border-radius: 8px; border: 1px solid #ffffff22; background: #ffffff10; color: #eef0f5; }
+  .vtd-btn.pri { background: #e9edf5; color: #11131a; border-color: transparent; font-weight: 600; }
+
+  /* cards */
+  .vtd-card { display: flex; align-items: center; gap: 15px; background: #14151a; border: 1px solid #ffffff1c;
+     border-radius: 14px; padding: 15px 16px; margin-bottom: 11px; position: relative; overflow: hidden; }
+  .vtd-acc { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #9a9aa6; transition: background .35s, box-shadow .35s; }
+  .vtd-card.applied .vtd-acc { background: #4CC38A; box-shadow: 0 0 14px #4CC38A99; }
+  .vtd-tile { width: 44px; height: 44px; border-radius: 11px; flex: none; display: grid; place-items: center; font-size: 20px; }
+  .vtd-ct { font-size: 15.5px; font-weight: 600; } .vtd-cd { font-size: 12px; opacity: .6; margin-top: 4px; max-width: 440px; }
+  .vtd-badges { margin-top: 8px; display: flex; gap: 6px; }
+  .vtd-bdg { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 5px; background: #ffffff14; color: #cfd4de; }
+  .vtd-right { margin-left: auto; display: flex; align-items: center; }
+  .vtd-sw { width: 44px; height: 24px; border-radius: 12px; background: #ffffff22; position: relative; transition: background .3s; }
+  .vtd-sw i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .3s; }
+  .vtd-card.applied .vtd-sw { background: #4CC38A; } .vtd-card.applied .vtd-sw i { left: 23px; }
+
+  /* toast + cursor */
+  .vtd-toast { position: absolute; right: 24px; bottom: 22px; background: #24222f; border: 1px solid #ffffff3a; border-radius: 10px;
+     padding: 10px 15px; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px #0008; opacity: 0; transform: translateY(8px); }
+  .vtd-cursor { position: absolute; width: 22px; height: 22px; margin: -2px 0 0 -2px; pointer-events: none; filter: drop-shadow(0 2px 3px #0008); z-index: 50; }
+
+  .vtd-bar { display: flex; gap: 6px; justify-content: center; padding: 12px 0 2px; flex-wrap: wrap; }
+  .vtd-bar button { font: inherit; font-size: 12px; color: #aab; background: #ffffff0f; border: 1px solid #ffffff1c; border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .vtd-bar button[aria-current="step"] { color: #fff; background: #ffffff22; }
+  figure { margin: 0; }
+  @media (prefers-reduced-motion: reduce) { .vtd-g1,.vtd-g2,.vtd-r1,.vtd-r2 { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="vtd-wrap">
+  <figure>
+    <div class="vtd-frame" id="vtd-frame" role="img"
+         aria-label="VoidTweaks demo: open Performance, apply a tweak, run a scan">
+      <div class="vtd-stage" id="vtd-stage">
+        <div class="vtd-bg"></div>
+        <div class="vtd-glow vtd-g1"></div>
+        <div class="vtd-glow vtd-g2"></div>
+        <div id="vtd-stars"></div>
+        <div class="vtd-hole">
+          <div class="vtd-ring vtd-r2"></div>
+          <div class="vtd-ring vtd-r1"></div>
+          <div class="vtd-ring vtd-core"></div>
+        </div>
+
+        <div class="vtd-top">
+          <span class="vtd-dot" style="background:#ff5f57"></span>
+          <span class="vtd-dot" style="background:#febc2e"></span>
+          <span class="vtd-dot" style="background:#28c840"></span>
+          <span class="vtd-title">VoidTweaks v3.2 — NullZone</span>
+        </div>
+
+        <div class="vtd-rail">
+          <div class="vtd-ri on">⌂</div><div class="vtd-ri" id="vtd-rail-opt">⚙</div>
+          <div class="vtd-ri">🧰</div><div class="vtd-ri">🩹</div><div class="vtd-ri">⚙</div>
+        </div>
+
+        <div class="vtd-nav">
+          <div class="vtd-brand">
+            <div class="vtd-blogo"><i></i></div>
+            <div><div class="vtd-bt">VoidTweaks</div><div class="vtd-bs">transparent · reversible · local</div></div>
+          </div>
+          <div class="vtd-ni" id="vtd-nav-perf">Performance</div>
+          <div class="vtd-ni">Gaming</div>
+          <div class="vtd-ni">Privacy</div>
+          <div class="vtd-ni">Network</div>
+          <div class="vtd-ni">Debloat</div>
+        </div>
+
+        <div class="vtd-main">
+          <div class="vtd-h1" id="vtd-title">Home</div>
+          <div class="vtd-sub" id="vtd-sub">Live system usage and what's worth doing next</div>
+          <div class="vtd-tools">
+            <div class="vtd-btn pri">⚡ Boost now</div>
+            <div class="vtd-btn" id="vtd-scan">Scan</div>
+            <div class="vtd-btn">Apply all</div>
+            <div class="vtd-btn">▭ Hide log</div>
+          </div>
+          <div id="vtd-cards"></div>
+        </div>
+
+        <div class="vtd-toast" id="vtd-toast">Applied ✓</div>
+        <svg class="vtd-cursor" id="vtd-cursor" viewBox="0 0 24 24"><path fill="#fff" stroke="#111" stroke-width="1.2" d="M4 2l15 9-6 1.6 3.4 6.5-2.8 1.5-3.4-6.6L5 18z"/></svg>
+      </div>
+    </div>
+    <figcaption class="vtd-bar" id="vtd-bar" aria-hidden="false"></figcaption>
+  </figure>
+</div>
+
+<script>
+/* ---------- tiny View(t) engine (vanilla), per html-demo contract ---------- */
+const stage = document.getElementById('vtd-stage');
+const frame = document.getElementById('vtd-frame');
+function fit(){ document.documentElement.style.setProperty('--k', frame.clientWidth/1200); }
+new ResizeObserver(fit).observe(frame); fit();
+
+// stars
+(function(){ let h=''; for(let i=0;i<40;i++){ const x=Math.random()*1200,y=Math.random()*750,o=(.25+Math.random()*.5).toFixed(2),s=(1+Math.random()*1.4).toFixed(1);
+  h+=`<div class="vtd-star" style="left:${x|0}px;top:${y|0}px;width:${s}px;height:${s}px;opacity:${o}"></div>`; } document.getElementById('vtd-stars').innerHTML=h; })();
+
+const TWEAKS = [
+  { t:'Remove startup app delay', d:"Launch startup apps right away instead of after Windows' ~10s wait.", ic:'🚀', c:'#9ED2A0', risk:'low risk' },
+  { t:'Favor the app you\'re using', d:'Give the foreground app more CPU priority for snappier response.', ic:'⚡', c:'#9ED2A0', risk:'low risk' },
+  { t:'Disable hibernation', d:'Frees several GB (hiberfil.sys) and removes the slow hybrid-boot path.', ic:'🛏', c:'#9ED2A0', risk:'med risk', admin:true },
+  { t:'Ultimate Performance plan', d:'Unlocks the hidden max-performance power scheme.', ic:'🏁', c:'#9ED2A0', risk:'low risk', admin:true },
+  { t:'Disable power throttling', d:'Stops Windows throttling background apps on the plugged-in profile.', ic:'🔋', c:'#9ED2A0', risk:'low risk', admin:true },
+];
+const cardsEl = document.getElementById('vtd-cards');
+let _cardSig = '';
+function renderCards(reveal, appliedSet, stagger){
+  const sig = reveal + '|' + [...appliedSet].sort().join(',') + '|' + stagger;
+  if(sig === _cardSig) return;          // only rebuild when state actually changes
+  _cardSig = sig;
+  let h='';
+  TWEAKS.forEach((w,i)=>{
+    if(i>=reveal) return;
+    const on = appliedSet.has(i) ? ' applied':'';
+    const delay = (Math.min(i,14)*0.032);
+    const anim = stagger ? `animation:vtd-in .34s cubic-bezier(.2,.7,.1,1) ${delay}s both` : '';
+    h+=`<div class="vtd-card${on}" data-i="${i}" style="${anim}">
+      <div class="vtd-acc"></div>
+      <div class="vtd-tile" style="background:${w.c}22;color:${w.c}">${w.ic}</div>
+      <div><div class="vtd-ct">${w.t}</div><div class="vtd-cd">${w.d}</div>
+        <div class="vtd-badges"><span class="vtd-bdg">${w.risk}</span>${w.admin?'<span class="vtd-bdg">ADMIN</span>':''}</div></div>
+      <div class="vtd-right"><div class="vtd-sw"><i></i></div></div>
+    </div>`;
+  });
+  cardsEl.innerHTML = h;
+}
+const kf = document.createElement('style');
+kf.textContent = '@keyframes vtd-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}';
+document.head.appendChild(kf);
+
+const cur = document.getElementById('vtd-cursor');
+const toast = document.getElementById('vtd-toast');
+const titleEl = document.getElementById('vtd-title'), subEl = document.getElementById('vtd-sub');
+
+// aim points (design-space 1200x750 coords; left pane offsets baked in)
+const AIM = {
+  home:   [150, 70],
+  railOpt:[99, 110],
+  perf:   [170, 175],     // Performance nav item
+  sw0:    [1120, 300],    // first card toggle (approx; main starts x=278, card right)
+  scan:   [405, 150],
+  rest:   [900, 560],
+};
+function ease(t,a,b){ if(t<=a)return 0; if(t>=b)return 1; const x=(t-a)/(b-a); return 1-Math.pow(1-x,3); }
+// glide cursor between waypoints [ [tStart,tEnd,x,y], ... ]
+function glide(t, legs){
+  let c = legs[0]; for(const L of legs){ if(t>=L[0]) c=L; }
+  // interpolate within current leg
+  for(let i=0;i<legs.length;i++){ const L=legs[i]; if(t>=L[0]&&t<=L[1]){ const p=ease(t,L[0],L[1]); const prev=i>0?legs[i-1]:L;
+     return [prev[2]+(L[2]-prev[2])*p, prev[3]+(L[3]-prev[3])*p]; } }
+  return [c[2],c[3]];
+}
+
+/* ---------- steps ---------- */
+const STEPS = [
+  { id:'perf', name:'Open Performance', dur:5.5, view(t){
+      titleEl.textContent = t>2.1?'Performance':'Home';
+      subEl.textContent = t>2.1?'13 tweak(s) · 0 applied':"Live system usage and what's worth doing next";
+      setNav(t>2.1);
+      renderCards(t>2.3 ? 5 : 0, APPLIED, true);
+      const [x,y]=glide(t, [[0,0,150,70],[0.5,1.4,99,110],[1.6,2.1,170,175]]);
+      place(x,y, t>1.7&&t<2.0);
+    }},
+  { id:'apply', name:'Apply a tweak', dur:5.5, view(t){
+      titleEl.textContent='Performance'; subEl.textContent = `13 tweak(s) · ${APPLIED.size} applied`;
+      setNav(true); renderCards(5, APPLIED, false);
+      const [x,y]=glide(t, [[0,0,170,175],[0.4,1.3,1150,187]]);
+      if(t>1.5 && !APPLIED.has(0)){ APPLIED.add(0); renderCards(5,APPLIED,false); showToast(); }
+      place(x,y, t>1.25&&t<1.5);
+    }},
+  { id:'apply2', name:'…and another', dur:5, view(t){
+      titleEl.textContent='Performance'; subEl.textContent=`13 tweak(s) · ${APPLIED.size} applied`;
+      setNav(true); renderCards(5, APPLIED, false);
+      const [x,y]=glide(t, [[0,0,1150,187],[0.4,1.3,1150,361]]);
+      if(t>1.5 && !APPLIED.has(2)){ APPLIED.add(2); renderCards(5,APPLIED,false); showToast(); }
+      place(x,y, t>1.25&&t<1.5);
+    }},
+  { id:'scan', name:'Scan', dur:5, view(t){
+      titleEl.textContent='Performance'; subEl.textContent=`13 tweak(s) · ${APPLIED.size} applied`;
+      setNav(true); renderCards(5, APPLIED, false);
+      document.getElementById('vtd-scan').textContent = (t>1.6&&t<3.2)?'Scanning…':'Scan';
+      const [x,y]=glide(t, [[0,0,1150,361],[0.5,1.4,405,118]]);
+      place(x,y, t>1.3&&t<1.55);
+      cur.style.opacity = t>3.6? Math.max(0,1-(t-3.6)/0.8) : 1;
+    }},
+];
+const APPLIED = new Set();
+function setNav(on){
+  document.getElementById('vtd-nav-perf').classList.toggle('on', on);
+  document.getElementById('vtd-rail-opt').classList.toggle('on', on);
+  document.querySelectorAll('.vtd-ri')[0].classList.toggle('on', !on);
+}
+function place(x,y,press){ cur.style.left=x+'px'; cur.style.top=y+'px'; cur.style.transform='scale('+(press?0.9:1)+')'; }
+let toastUntil=0;
+function showToast(){ toastUntil = clock()+2.2; }
+function paintToast(){ const on = clock()<toastUntil; toast.style.opacity=on?1:0; toast.style.transform='translateY('+(on?0:8)+'px)'; }
+
+/* ---------- clock / loop ---------- */
+const bar = document.getElementById('vtd-bar');
+STEPS.forEach((s,i)=>{ const b=document.createElement('button'); b.textContent=s.name; b.onclick=()=>jump(i);
+  if(i===0)b.setAttribute('aria-current','step'); bar.appendChild(b); });
+let si=0, st=0, last=performance.now(), playing=true, _clock=0;
+function clock(){ return _clock; }
+const TOTAL = STEPS.reduce((a,s)=>a+s.dur,0);
+function resetSim(){ APPLIED.clear(); toastUntil=0; }
+function jump(i){ si=i; st=0; if(i===0) resetSim(); mark(); }
+function mark(){ [...bar.children].forEach((b,i)=> i===si?b.setAttribute('aria-current','step'):b.removeAttribute('aria-current')); }
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let onScreen=true;
+new IntersectionObserver(e=>{ onScreen=e[0].isIntersecting; },{threshold:.3}).observe(frame);
+
+function tick(now){
+  let dt=Math.min(.25,(now-last)/1000); last=now;
+  if(playing && onScreen && !document.hidden && !reduce){
+    st+=dt; _clock+=dt;
+    if(st>=STEPS[si].dur){ st=0; si=(si+1)%STEPS.length; if(si===0) resetSim(); mark(); }
+  }
+  STEPS[si].view(reduce?STEPS[si].dur:st);
+  paintToast();
+  requestAnimationFrame(tick);
+}
+if(reduce){ // designed end frame: everything applied, Performance open
+  APPLIED.add(0); APPLIED.add(2); si=STEPS.length-1; mark(); STEPS[si].view(STEPS[si].dur);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
