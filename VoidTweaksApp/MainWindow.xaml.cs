@@ -18,7 +18,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
-    public const string Version = "3.2";
+    public const string Version = "3.1";
     private HashSet<string> _favs = Engine.GetFavorites();
     private string _perfTab = "Power plans";
     private System.Threading.CancellationTokenSource? _stressCts;
