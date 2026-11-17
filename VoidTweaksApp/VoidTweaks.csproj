@@ -33,5 +33,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Resource Include="..\VoidTweaks.ico" Link="VoidTweaks.ico" />
+    <Resource Include="cursor-glow.cur" />
   </ItemGroup>
 </Project>

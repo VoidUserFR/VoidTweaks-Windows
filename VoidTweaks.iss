@@ -19,6 +19,15 @@ UninstallDisplayIcon={app}\{#MyAppExe}
 OutputDir=installer
 OutputBaseFilename=VoidTweaks-Setup
 SetupIconFile=VoidTweaks.ico
+; File metadata — gives the installer a real identity (helps AV heuristics; does NOT replace code signing)
+VersionInfoVersion={#MyAppVersion}.0
+VersionInfoProductVersion={#MyAppVersion}.0
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoProductName={#MyAppName}
+VersionInfoDescription={#MyAppName} Setup
+VersionInfoCopyright=MIT License — github.com/VoidUserFR/VoidTweaks-Windows
+AppPublisherURL=https://github.com/VoidUserFR/VoidTweaks-Windows
+AppSupportURL=https://github.com/VoidUserFR/VoidTweaks-Windows/issues
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

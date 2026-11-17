@@ -137,6 +137,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             if (Engine.FirstRun()) FirstRunTour();
             InitLogBar();
             InitLogoTilt();
+            InitGlowCursor();
             // initial background scan so non-registry tweak statuses (debloat, power, boot…) resolve automatically
             System.Threading.Tasks.Task.Run(() => { Engine.RefreshScan(); Dispatcher.Invoke(Render); });
         };
@@ -2827,9 +2828,24 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         _busy = b;
         BoostBtn.IsEnabled = ApplyAllBtn.IsEnabled = RevertAllBtn.IsEnabled = ScanBtn.IsEnabled = !b;
-        Cursor = b ? System.Windows.Input.Cursors.Wait : null;
+        // no Windows wait-cursor — the glowing cursor stays put (ForceCursor keeps it even while busy)
         HeaderSub.Opacity = b ? 0.35 : 0.65;
         try { BusyRing.Visibility = b ? Visibility.Visible : Visibility.Collapsed; } catch { }
+    }
+
+    // smooth white glowing cursor, app-wide; ForceCursor keeps it even while busy (no Windows wait cursor)
+    private void InitGlowCursor()
+    {
+        try
+        {
+            var info = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/cursor-glow.cur"));
+            if (info?.Stream != null)
+            {
+                Cursor = new System.Windows.Input.Cursor(info.Stream);
+                ForceCursor = true;
+            }
+        }
+        catch { }
     }
 
     // ---- tweak queue: clicks never block; batches run one after another ----
