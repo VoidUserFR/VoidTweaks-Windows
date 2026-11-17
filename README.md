@@ -159,7 +159,7 @@ Everything a tweak does is visible in `tweaks.json` — **no hidden actions**.
 
 **Will it break Windows Update / my PC?** No tweak blocks updates unless you explicitly apply one that does, and it's reversible. Keep "Restore point first" on.
 
-**Antivirus flagged the download?** Self-contained single-file apps that touch system settings sometimes trip heuristics. The full source is right here — build it yourself if you prefer.
+**Antivirus flagged the download? / "Windows protected your PC"?** VoidTweaks is unsigned, so SmartScreen and some AV engines warn on first run — it's a false positive (the full source is right here; build it yourself if you prefer). To run it now: **More info → Run anyway**. To get it cleared properly, see **[docs/report-false-positive.md](docs/report-false-positive.md)**.
 
 ---
 
