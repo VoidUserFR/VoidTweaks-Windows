@@ -42,6 +42,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private string? _firstResult;
     private readonly Dictionary<string, (int total, int applied)> _catStats = new();
     private List<string> _undo = new();
+    private List<string> _undoRun = new();
     private readonly Dictionary<string, (Border box, TextBlock label)> _nav = new();
     private int _cpuPct, _ramPct;
     private readonly List<double> _cpuHist = new();
@@ -1124,7 +1125,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void ConfirmBulk(List<Tweak> set, bool revert)
     {
         if (set.Count == 0) return;
-        if (_busy) { Log("Busy — wait for the current action to finish."); return; }
         var verb = revert ? Loc.S("revert") : Loc.S("apply");
         var names = string.Join("\n", set.Take(12).Select(t => "• " + Loc.T("tw." + t.Id, t.Name)));
         if (set.Count > 12) names += "\n" + string.Format(Loc.S("…and {0} more"), set.Count - 12);
@@ -1178,8 +1178,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             var ts = new Wpf.Ui.Controls.ToggleSwitch { IsChecked = state == "applied", Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
             if (tw.RequiresAdmin && !IsAdmin()) { ts.IsEnabled = false; ts.ToolTip = Loc.S("Needs administrator"); }
             bool init = true;
-            ts.Checked += (_, _) => { if (init) return; if (_busy) { Log("Busy — wait for the current action to finish."); Render(); return; } RunMany(new[] { tw }, false, "apply: " + tw.Name); };
-            ts.Unchecked += (_, _) => { if (init) return; if (_busy) { Log("Busy — wait for the current action to finish."); Render(); return; } RunMany(new[] { tw }, true, "revert: " + tw.Name); };
+            ts.Checked += (_, _) => { if (init) return; RunMany(new[] { tw }, false, "apply: " + tw.Name); };
+            ts.Unchecked += (_, _) => { if (init) return; RunMany(new[] { tw }, true, "revert: " + tw.Name); };
             init = false;
             right.Children.Add(ts);
         }
@@ -2832,9 +2832,54 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         try { BusyRing.Visibility = b ? Visibility.Visible : Visibility.Collapsed; } catch { }
     }
 
+    // ---- tweak queue: clicks never block; batches run one after another ----
+    private readonly Queue<(Tweak[] set, bool revert, string label)> _queue = new();
+    private bool _pumping;
+
     private void RunMany(IEnumerable<Tweak> set, bool revert, string label)
     {
-        if (_busy) { Log("Busy — wait for the current action to finish."); return; }
+        var arr = set as Tweak[] ?? System.Linq.Enumerable.ToArray(set);
+        if (arr.Length == 0) return;
+        if (!_pumping) _undoRun = new();   // fresh queue run: Undo should cover everything that follows
+        _queue.Enqueue((arr, revert, label));
+        if (_pumping) { UpdateQueueBadge(); ShowToast(string.Format(Loc.S("Queued ({0}) ⏳"), _queue.Count)); return; }
+        PumpQueue();
+    }
+
+    private void PumpQueue()
+    {
+        if (_queue.Count == 0) { _pumping = false; SetBusy(false); UpdateQueueBadge(); return; }
+        _pumping = true;
+        SetBusy(true);
+        UpdateQueueBadge();
+        var item = _queue.Dequeue();
+        RunBatch(item.set, item.revert, item.label);
+    }
+
+    private void UpdateQueueBadge()
+    {
+        try
+        {
+            int n = _queue.Count;
+            QueueBadge.Visibility = (_pumping && n > 0) ? Visibility.Visible : Visibility.Collapsed;
+            QueueBadge.ToolTip = Loc.S("Click to clear pending");
+            QueueBadgeText.Text = string.Format(Loc.S("{0} queued"), n);
+        }
+        catch { }
+    }
+
+    private void QueueBadge_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        int n = _queue.Count;
+        if (n == 0) return;
+        _queue.Clear();
+        UpdateQueueBadge();
+        Log($"Queue cleared ({n} pending dropped). The running action finishes.");
+        ShowToast(Loc.S("Queue cleared") + " ✕");
+    }
+
+    private void RunBatch(Tweak[] set, bool revert, string label)
+    {
         bool dry = DryCheck.IsChecked == true;
         bool restore = RestoreCheck.IsChecked == true && IsAdmin();
         var cmds = new List<string>(); var ids = new List<string>(); int skipped = 0;
@@ -2847,11 +2892,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             cmds.AddRange(c);
             if (!revert && t.Reversible && t.Revert.Count > 0) ids.Add(t.Id);
         }
-        if (cmds.Count == 0) { Log($"Nothing to {(revert ? "revert" : "apply")}{(skipped > 0 ? $" ({skipped} need admin)" : "")}."); return; }
+        if (cmds.Count == 0) { Log($"Nothing to {(revert ? "revert" : "apply")}{(skipped > 0 ? $" ({skipped} need admin)" : "")}."); Dispatcher.BeginInvoke(new Action(PumpQueue)); return; }
         Log($"=== {label}{(dry ? " (dry run)" : "")} ===");
-        if (dry) { foreach (var c in cmds) if (!c.StartsWith("Write-Output")) Log("WOULD RUN: " + c); Render(); return; }
+        if (dry) { foreach (var c in cmds) if (!c.StartsWith("Write-Output")) Log("WOULD RUN: " + c); Render(); Dispatcher.BeginInvoke(new Action(PumpQueue)); return; }
 
-        SetBusy(true);
         System.Threading.Tasks.Task.Run(() =>
         {
             if (!revert && restore) Engine.RestorePoint();
@@ -2859,12 +2903,12 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             Dispatcher.Invoke(() =>
             {
                 Log(outp);
-                if (ids.Count > 0) { _undo = ids; UndoBtn.IsEnabled = true; }
+                if (ids.Count > 0) { _undoRun.AddRange(ids); _undo = _undoRun; UndoBtn.IsEnabled = true; }
                 try { Engine.RecordHistory(set.Where(t => (revert ? t.Revert.Count : t.Apply.Count) > 0 && (revert || !t.RequiresAdmin || IsAdmin())).Select(t => (t.Id, t.Name)), revert ? "revert" : "apply"); } catch { }
-                SetBusy(false);
                 Render();
                 PulseContent(revert);
                 ShowToast((revert ? Loc.S("Reverted") : Loc.S("Applied")) + " ✓");
+                PumpQueue();
             });
         });
     }

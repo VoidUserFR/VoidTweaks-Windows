@@ -586,7 +586,11 @@
   "s.Starting installer…": "Iniciando instalador…",
   "s.Restoring…": "Restaurando…",
   "s.Nothing matches this filter.": "Nada corresponde a este filtro.",
-  "s.No restore points yet. Create one above for a safety net.": "Ainda não há pontos de restauração. Crie um acima como rede de segurança."
+  "s.No restore points yet. Create one above for a safety net.": "Ainda não há pontos de restauração. Crie um acima como rede de segurança.",
+  "s.{0} queued": "{0} na fila",
+  "s.Queued ({0}) ⏳": "Na fila ({0}) ⏳",
+  "s.Queue cleared": "Fila limpa",
+  "s.Click to clear pending": "Clicar para limpar a fila"
  },
  "ru": {
   "nav.Home": "Главная",
@@ -1029,7 +1033,11 @@
   "s.Starting installer…": "Запуск установщика…",
   "s.Restoring…": "Восстановление…",
   "s.Nothing matches this filter.": "Ничего не найдено по фильтру.",
-  "s.No restore points yet. Create one above for a safety net.": "Точек восстановления пока нет. Создайте одну выше для подстраховки."
+  "s.No restore points yet. Create one above for a safety net.": "Точек восстановления пока нет. Создайте одну выше для подстраховки.",
+  "s.{0} queued": "{0} в очереди",
+  "s.Queued ({0}) ⏳": "В очереди ({0}) ⏳",
+  "s.Queue cleared": "Очередь очищена",
+  "s.Click to clear pending": "Нажмите, чтобы очистить очередь"
  },
  "fr": {
   "nav.Home": "Accueil",
@@ -1468,7 +1476,11 @@
   "s.Starting installer…": "Démarrage de l’installateur…",
   "s.Restoring…": "Restauration…",
   "s.Nothing matches this filter.": "Rien ne correspond à ce filtre.",
-  "s.No restore points yet. Create one above for a safety net.": "Aucun point de restauration. Créez-en un ci-dessus par sécurité."
+  "s.No restore points yet. Create one above for a safety net.": "Aucun point de restauration. Créez-en un ci-dessus par sécurité.",
+  "s.{0} queued": "{0} en file",
+  "s.Queued ({0}) ⏳": "En file ({0}) ⏳",
+  "s.Queue cleared": "File vidée",
+  "s.Click to clear pending": "Cliquer pour vider la file"
  },
  "de": {
   "nav.Home": "Start",
@@ -1907,7 +1919,11 @@
   "s.Starting installer…": "Installer wird gestartet…",
   "s.Restoring…": "Wird wiederhergestellt…",
   "s.Nothing matches this filter.": "Nichts entspricht diesem Filter.",
-  "s.No restore points yet. Create one above for a safety net.": "Noch keine Wiederherstellungspunkte. Erstellen Sie oben einen zur Sicherheit."
+  "s.No restore points yet. Create one above for a safety net.": "Noch keine Wiederherstellungspunkte. Erstellen Sie oben einen zur Sicherheit.",
+  "s.{0} queued": "{0} in Warteschlange",
+  "s.Queued ({0}) ⏳": "Eingereiht ({0}) ⏳",
+  "s.Queue cleared": "Warteschlange geleert",
+  "s.Click to clear pending": "Zum Leeren klicken"
  },
  "es": {
   "nav.Home": "Inicio",
@@ -2347,7 +2363,11 @@
   "s.Starting installer…": "Iniciando instalador…",
   "s.Restoring…": "Restaurando…",
   "s.Nothing matches this filter.": "Nada coincide con este filtro.",
-  "s.No restore points yet. Create one above for a safety net.": "Aún no hay puntos de restauración. Crea uno arriba como red de seguridad."
+  "s.No restore points yet. Create one above for a safety net.": "Aún no hay puntos de restauración. Crea uno arriba como red de seguridad.",
+  "s.{0} queued": "{0} en cola",
+  "s.Queued ({0}) ⏳": "En cola ({0}) ⏳",
+  "s.Queue cleared": "Cola vaciada",
+  "s.Click to clear pending": "Clic para vaciar la cola"
  },
  "zh": {
   "nav.Home": "主页",
@@ -2791,7 +2811,11 @@
   "s.Starting installer…": "正在启动安装程序…",
   "s.Restoring…": "正在还原…",
   "s.Nothing matches this filter.": "没有符合此筛选的项。",
-  "s.No restore points yet. Create one above for a safety net.": "暂无还原点。在上方创建一个作为保险。"
+  "s.No restore points yet. Create one above for a safety net.": "暂无还原点。在上方创建一个作为保险。",
+  "s.{0} queued": "{0} 个排队中",
+  "s.Queued ({0}) ⏳": "已排队 ({0}) ⏳",
+  "s.Queue cleared": "队列已清空",
+  "s.Click to clear pending": "点击清空队列"
  },
  "it": {
   "nav.Home": "Home",
@@ -3229,7 +3253,11 @@
   "s.Starting installer…": "Avvio installazione…",
   "s.Restoring…": "Ripristino…",
   "s.Nothing matches this filter.": "Nessun risultato per questo filtro.",
-  "s.No restore points yet. Create one above for a safety net.": "Nessun punto di ripristino. Creane uno sopra per sicurezza."
+  "s.No restore points yet. Create one above for a safety net.": "Nessun punto di ripristino. Creane uno sopra per sicurezza.",
+  "s.{0} queued": "{0} in coda",
+  "s.Queued ({0}) ⏳": "In coda ({0}) ⏳",
+  "s.Queue cleared": "Coda svuotata",
+  "s.Click to clear pending": "Clicca per svuotare la coda"
  },
  "ja": {
   "nav.Home": "ホーム",
@@ -3672,6 +3700,10 @@
   "s.Starting installer…": "インストーラーを起動中…",
   "s.Restoring…": "復元中…",
   "s.Nothing matches this filter.": "このフィルターに一致する項目はありません。",
-  "s.No restore points yet. Create one above for a safety net.": "復元ポイントがありません。安全のため上で作成してください。"
+  "s.No restore points yet. Create one above for a safety net.": "復元ポイントがありません。安全のため上で作成してください。",
+  "s.{0} queued": "{0} 件待機中",
+  "s.Queued ({0}) ⏳": "待機中 ({0}) ⏳",
+  "s.Queue cleared": "キューをクリアしました",
+  "s.Click to clear pending": "クリックして待機列をクリア"
  }
 }
