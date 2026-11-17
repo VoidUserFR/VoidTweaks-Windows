@@ -1,0 +1,53 @@
+:root { --ink:#F6F6F9; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:#000; height:100%; overflow:hidden; }
+#wrap { position:absolute; inset:0; }
+#stage {
+  position:absolute; width:1200px; height:675px; transform-origin:0 0;
+  background:radial-gradient(130% 110% at 50% 34%, #15131c 0%, #0a0810 50%, #050309 76%, #000 100%);
+  font-family:'Segoe UI',system-ui,sans-serif; color:var(--ink); overflow:hidden;
+}
+/* dark-galaxy background (injected by engine.js) */
+.neb { position:absolute; border-radius:50%; filter:blur(46px); opacity:.55; will-change:transform; }
+.neb.a { width:620px; height:620px; left:120px; top:-120px; background:radial-gradient(circle, rgba(139,124,240,.30), rgba(139,124,240,0) 65%); }
+.neb.b { width:560px; height:560px; right:60px; top:180px; background:radial-gradient(circle, rgba(83,120,255,.22), rgba(83,120,255,0) 65%); }
+.neb.c { width:500px; height:500px; left:40%; bottom:-180px; background:radial-gradient(circle, rgba(53,185,173,.16), rgba(53,185,173,0) 65%); }
+.stars, .starsFar { position:absolute; inset:0; }
+.star { position:absolute; border-radius:50%; background:#fff; will-change:opacity; }
+.star.glow { box-shadow:0 0 6px 1px rgba(255,255,255,.9), 0 0 14px 3px rgba(173,165,230,.5); }
+.vignette { position:absolute; inset:0; box-shadow:inset 0 0 240px 80px rgba(0,0,0,.6); pointer-events:none; }
+
+/* logo */
+.logo { position:absolute; left:50%; top:26%; width:154px; height:154px; transform:translate(-50%,-50%); will-change:transform; }
+.logo img { width:100%; height:100%; display:block; border-radius:34px;
+            filter:drop-shadow(0 0 28px rgba(255,255,255,.4)) drop-shadow(0 0 80px rgba(139,124,240,.35)); }
+.glowCore { position:absolute; left:50%; top:26%; width:300px; height:300px; transform:translate(-50%,-50%);
+            border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.2), rgba(139,124,240,.08) 40%, rgba(255,255,255,0) 64%); }
+
+/* text rows (each scene positions via inline top or these helpers) */
+.wordmark { position:absolute; left:0; right:0; text-align:center; opacity:0; font-size:80px; font-weight:800; letter-spacing:-1.5px; line-height:1; }
+.wordmark .w { display:inline-block; padding:0 6px; background:linear-gradient(180deg,#fff,#d0ced9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.line { position:absolute; left:0; right:0; text-align:center; opacity:0; line-height:1.1; }
+.line.big { font-size:54px; font-weight:800; letter-spacing:-1px; }
+.line.mid { font-size:34px; font-weight:700; }
+.line.muted { color:#8d8aa0; }
+.sub { position:absolute; left:0; right:0; text-align:center; font-size:22px; font-weight:500; color:#c9c7d5; opacity:0; }
+.hl { position:relative; color:#0a0a0c; font-weight:800; padding:0 9px; z-index:1; white-space:nowrap; }
+.hl::before { content:""; position:absolute; left:0; bottom:2px; height:80%; width:100%; z-index:-1; background:#fff; border-radius:3px; transform-origin:left center; transform:scaleX(var(--hl,0)); }
+
+/* chips */
+.chips { position:absolute; left:0; right:0; display:flex; gap:16px; justify-content:center; }
+.chip { opacity:0; padding:12px 22px; border-radius:14px; font-size:18px; font-weight:500; color:#dcdae6;
+        background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.15); display:flex; align-items:center; gap:9px; box-shadow:0 2px 20px rgba(139,124,240,.06); }
+.chip b { color:#fff; font-weight:800; }
+.stat { font-variant-numeric:tabular-nums; }
+
+/* CTA */
+.cta { position:absolute; left:0; right:0; text-align:center; opacity:0; }
+.cta .btn { display:inline-block; padding:15px 36px; border-radius:13px; font-size:20px; font-weight:700; color:#0a0a0c; background:linear-gradient(180deg,#fff,#dedce8); box-shadow:0 10px 44px rgba(139,124,240,.28); }
+.cta .sub2 { margin-top:11px; font-size:14px; color:#908ea0; letter-spacing:.4px; }
+
+/* screenshot cards */
+.shot { position:absolute; border-radius:14px; overflow:hidden; opacity:0; border:1px solid rgba(255,255,255,.14);
+        box-shadow:0 20px 70px rgba(0,0,0,.6), 0 0 44px rgba(139,124,240,.12); will-change:transform,opacity; }
+.shot img { display:block; width:100%; height:auto; }

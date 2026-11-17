@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidTweaks — Why</title>
+<link rel="stylesheet" href="promo.css" />
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <div class="glowCore" id="glow"></div>
+  <div class="logo" id="logo"><img src="../img/logo.png" alt="VoidTweaks" /></div>
+
+  <div class="line mid muted" id="l1" style="top:45%">Other optimizers hide what they change.</div>
+  <div class="line big"       id="l2" style="top:54%">VoidTweaks shows <span class="hl" id="hl">every command</span>.</div>
+  <div class="sub"            id="sub" style="top:71%">Open-source · plain language · one-click revert</div>
+  <div class="vignette"></div>
+</div></div>
+
+<script src="engine.js"></script>
+<script>
+const logo=document.getElementById('logo'), glow=document.getElementById('glow'),
+      l1=document.getElementById('l1'), l2=document.getElementById('l2'),
+      hl=document.getElementById('hl'), sub=document.getElementById('sub');
+window.SCENE = {
+  dur: 13.5,
+  frame(t, {ease, band, TAU}){
+    const u = t/this.dur;
+    logo.style.transform = `translate(-50%,-50%) scale(${1 + 0.016*Math.sin(TAU*2*u)})`;
+    glow.style.opacity = 0.5 + 0.28*Math.sin(TAU*2*u);
+    l1.style.opacity = band(t, 1.0,2.4, 12.2,13.3);
+    l1.style.transform = `translateY(${(1-ease(t,1.0,2.4))*14}px)`;
+    l2.style.opacity = band(t, 3.6,5.0, 12.2,13.3);
+    l2.style.transform = `translateY(${(1-ease(t,3.6,5.0))*16}px)`;
+    hl.style.setProperty('--hl', (ease(t,4.4,5.4) - ease(t,12.2,12.9)).toFixed(3));
+    sub.style.opacity = band(t, 6.0,7.2, 12.4,13.3);
+  }
+};
+window.__start();
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidTweaks — Stats</title>
+<link rel="stylesheet" href="promo.css" />
+<style>
+  .heading { position:absolute; left:0; right:0; top:18%; text-align:center; opacity:0;
+             font-size:46px; font-weight:800; letter-spacing:-1px; }
+  .tiles { position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); display:flex; gap:40px; justify-content:center; }
+  .tile { opacity:0; text-align:center; min-width:220px; padding:26px 18px; border-radius:20px;
+          background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.13); box-shadow:0 10px 50px rgba(139,124,240,.1); }
+  .tile .num { font-size:72px; font-weight:800; line-height:1; letter-spacing:-2px; font-variant-numeric:tabular-nums;
+               background:linear-gradient(180deg,#fff,#cfcdda); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .tile .lbl { margin-top:12px; font-size:16px; font-weight:600; color:#b8b6c6; letter-spacing:2px; text-transform:uppercase; }
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <div class="heading" id="hd">One free app. Everything tuned.</div>
+  <div class="tiles" id="tiles">
+    <div class="tile" id="t0"><div class="num"><span id="n0">0</span></div><div class="lbl">Tweaks</div></div>
+    <div class="tile" id="t1"><div class="num"><span id="n1">0</span></div><div class="lbl">Languages</div></div>
+    <div class="tile" id="t2"><div class="num"><span id="n2">0</span>%</div><div class="lbl">Reversible</div></div>
+  </div>
+  <div class="sub" id="sub" style="top:78%">Performance · Privacy · Network · Gaming · Debloat</div>
+  <div class="vignette"></div>
+</div></div>
+
+<script src="engine.js"></script>
+<script>
+const hd=document.getElementById('hd'), sub=document.getElementById('sub'),
+      tiles=[document.getElementById('t0'),document.getElementById('t1'),document.getElementById('t2')],
+      nums=[document.getElementById('n0'),document.getElementById('n1'),document.getElementById('n2')],
+      targets=[142,9,100];
+window.SCENE = {
+  dur: 13.5,
+  frame(t, {ease, band}){
+    hd.style.opacity = band(t, 0.8,2.2, 12.2,13.3);
+    hd.style.transform = `translateY(${(1-ease(t,0.8,2.2))*-12}px)`;
+    tiles.forEach((tl,i)=>{ const a=2.4+i*0.45;
+      tl.style.opacity = band(t, a,a+0.7, 12.3,13.2);
+      tl.style.transform = `translateY(${(1-ease(t,a,a+0.7))*18}px)`;
+      const p = ease(t, a+0.1, a+1.6);           // count-up finishes shortly after each tile lands
+      nums[i].textContent = Math.round(targets[i]*p);
+    });
+    sub.style.opacity = band(t, 6.0,7.2, 12.4,13.3);
+  }
+};
+window.__start();
+</script>
+</body>
+</html>

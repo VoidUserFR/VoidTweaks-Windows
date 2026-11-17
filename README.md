@@ -20,6 +20,8 @@
 
 ### ⬇️ [**Download the latest release**](../../releases/latest) &nbsp;·&nbsp; 💬 [Report a bug](../../issues) &nbsp;·&nbsp; ⭐ Star if it helped!
 
+<img src="docs/promo/ad-intro.webp" alt="VoidTweaks — free, open, fully reversible Windows 11 optimizer" width="860" />
+
 <img src="docs/img/hero.png" alt="VoidTweaks main window" width="860" />
 
 </div>
@@ -30,6 +32,8 @@
 
 > **I made VoidTweaks to pull together the functions you'd find across the usual paid Windows-tweaking apps — and make it ALL FREE AND OPEN-SOURCE.**
 > Because I hate (and I'm sure you do too) wasting money on a tool we'll use once or twice a month. 🫡
+
+<div align="center"><img src="docs/promo/ad-why.webp" width="820" alt="Other optimizers hide what they change — VoidTweaks shows every command" /></div>
 
 Most "PC optimizers" are closed boxes: they hide what they change, nag you to pay, and sometimes leave your system worse than they found it. VoidTweaks is the opposite:
 
@@ -55,6 +59,8 @@ Most "PC optimizers" are closed boxes: they hide what they change, nag you to pa
 
 <sub>↑ animated preview · open Performance → apply tweaks (they glow green) → scan</sub>
 
+<img src="docs/promo/ad-shots.webp" width="880" alt="See it. Change it. Revert it. — VoidTweaks Home and tweak list"/>
+
 <img src="docs/img/home.png" width="880"/>
 
 </div>
@@ -62,6 +68,8 @@ Most "PC optimizers" are closed boxes: they hide what they change, nag you to pa
 ---
 
 ## ✨ Features
+
+<div align="center"><img src="docs/promo/ad-stats.webp" width="820" alt="142 tweaks · 9 languages · 100% reversible" /></div>
 
 ### 🎨 NullZone — the new look *(v3.0)*
 - A **three-pane** layout: icon rail (Home / Optimize / Tools / Fixes / Settings) → category column → content.

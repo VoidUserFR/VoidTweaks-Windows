@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidTweaks — Screens</title>
+<link rel="stylesheet" href="promo.css" />
+<style>
+  .heading { position:absolute; left:0; right:0; top:11%; text-align:center; opacity:0; z-index:5;
+             font-size:46px; font-weight:800; letter-spacing:-1px; }
+  #a { width:580px; left:46px; top:30%; }
+  #b { width:580px; right:46px; top:40%; z-index:3; }
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <div class="heading" id="hd">See it. Change it. Revert it.</div>
+  <div class="shot" id="a"><img src="../img/hero.png" alt="VoidTweaks window" /></div>
+  <div class="shot" id="b"><img src="../img/tweaks-list.png" alt="VoidTweaks tweak list" /></div>
+  <div class="sub" id="sub" style="top:85%; z-index:5">A clean, transparent control center.</div>
+  <div class="vignette"></div>
+</div></div>
+
+<script src="engine.js"></script>
+<script>
+const hd=document.getElementById('hd'), a=document.getElementById('a'), b=document.getElementById('b'), sub=document.getElementById('sub');
+window.SCENE = {
+  dur: 13.5,
+  frame(t, {ease, band}){
+    hd.style.opacity = band(t, 0.6,1.9, 12.2,13.3);
+    hd.style.transform = `translateY(${(1-ease(t,0.6,1.9))*-12}px)`;
+    const ea = ease(t,1.0,2.6) - ease(t,12.2,13.2);
+    a.style.opacity = Math.max(0, band(t,1.0,2.6, 12.2,13.2));
+    a.style.transform = `translateX(${(1-ea)*-130}px) rotate(-4deg)`;
+    const eb = ease(t,2.2,3.8) - ease(t,12.2,13.2);
+    b.style.opacity = Math.max(0, band(t,2.2,3.8, 12.2,13.2));
+    b.style.transform = `translateX(${(1-eb)*130}px) rotate(4deg)`;
+    sub.style.opacity = band(t, 6.0,7.2, 12.4,13.3);
+  }
+};
+window.__start();
+</script>
+</body>
+</html>

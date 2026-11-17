@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidTweaks — Ad Intro</title>
+<style>
+  :root { --ink:#F6F6F9; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { background:#000; height:100%; overflow:hidden; }
+  #wrap { position:absolute; inset:0; }
+  #stage {
+    position:absolute; width:1200px; height:675px; transform-origin:0 0;
+    background:radial-gradient(130% 110% at 50% 34%, #15131c 0%, #0a0810 50%, #050309 76%, #000 100%);
+    font-family:'Segoe UI',system-ui,sans-serif; color:var(--ink); overflow:hidden;
+  }
+  /* --- signature dark-galaxy background --- */
+  .neb { position:absolute; border-radius:50%; filter:blur(46px); opacity:.55; will-change:transform; }
+  .neb.a { width:620px; height:620px; left:120px; top:-120px;
+           background:radial-gradient(circle, rgba(139,124,240,.30), rgba(139,124,240,0) 65%); }
+  .neb.b { width:560px; height:560px; right:60px; top:180px;
+           background:radial-gradient(circle, rgba(83,120,255,.22), rgba(83,120,255,0) 65%); }
+  .neb.c { width:500px; height:500px; left:40%; bottom:-180px;
+           background:radial-gradient(circle, rgba(53,185,173,.16), rgba(53,185,173,0) 65%); }
+  .stars, .starsFar { position:absolute; inset:0; }
+  .star { position:absolute; border-radius:50%; background:#fff; will-change:opacity; }
+  .star.glow { box-shadow:0 0 6px 1px rgba(255,255,255,.9), 0 0 14px 3px rgba(173,165,230,.5); }
+
+  .logo { position:absolute; left:50%; top:26%; width:154px; height:154px; transform:translate(-50%,-50%); will-change:transform; }
+  .logo img { width:100%; height:100%; display:block; border-radius:34px;
+              filter:drop-shadow(0 0 28px rgba(255,255,255,.4)) drop-shadow(0 0 80px rgba(139,124,240,.35)); }
+  .glowCore { position:absolute; left:50%; top:26%; width:300px; height:300px; transform:translate(-50%,-50%);
+          border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.2), rgba(139,124,240,.08) 40%, rgba(255,255,255,0) 64%); }
+
+  .wordmark { position:absolute; left:0; right:0; top:47%; text-align:center; opacity:0;
+              font-size:80px; font-weight:800; letter-spacing:-1.5px; line-height:1; }
+  .wordmark .w { display:inline-block; padding:0 6px;
+                 background:linear-gradient(180deg,#fff,#d0ced9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  .tag { position:absolute; left:0; right:0; top:58.5%; text-align:center; font-size:23px; font-weight:500; color:#c9c7d5; opacity:0; }
+  .tag .hl { position:relative; color:#0a0a0c; font-weight:700; padding:0 8px; z-index:1; }
+  .tag .hl::before { content:""; position:absolute; left:0; bottom:1px; height:78%; width:100%; z-index:-1;
+                     background:#fff; border-radius:3px; transform-origin:left center; transform:scaleX(var(--hl,0)); }
+
+  .chips { position:absolute; left:0; right:0; top:66.5%; display:flex; gap:16px; justify-content:center; }
+  .chip { opacity:0; padding:12px 22px; border-radius:14px; font-size:18px; font-weight:500; color:#dcdae6;
+          background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.15); display:flex; align-items:center; gap:9px;
+          box-shadow:0 2px 20px rgba(139,124,240,.06); }
+  .chip b { color:#fff; font-weight:800; }
+
+  .cta { position:absolute; left:0; right:0; top:78%; text-align:center; opacity:0; }
+  .cta .btn { display:inline-block; padding:15px 36px; border-radius:13px; font-size:20px; font-weight:700;
+              color:#0a0a0c; background:linear-gradient(180deg,#fff,#dedce8); box-shadow:0 10px 44px rgba(139,124,240,.28); }
+  .cta .sub { margin-top:11px; font-size:14px; color:#908ea0; letter-spacing:.4px; }
+  .vignette { position:absolute; inset:0; box-shadow:inset 0 0 240px 80px rgba(0,0,0,.6); pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <div class="neb a" id="nebA"></div>
+  <div class="neb b" id="nebB"></div>
+  <div class="neb c" id="nebC"></div>
+  <div class="starsFar" id="starsFar"></div>
+  <div class="stars" id="stars"></div>
+
+  <div class="glowCore" id="glow"></div>
+  <div class="logo" id="logo"><img src="../img/logo.png" alt="VoidTweaks" /></div>
+
+  <div class="wordmark" id="wordmark"><span class="w">VoidTweaks</span></div>
+  <div class="tag" id="tag">Windows 11, optimized. <span class="hl" id="hl">Free</span> &amp; fully reversible.</div>
+
+  <div class="chips" id="chips">
+    <div class="chip"><b>142</b> tweaks</div>
+    <div class="chip"><b>1-click</b> revert</div>
+    <div class="chip"><b>0</b> telemetry</div>
+  </div>
+  <div class="cta" id="cta">
+    <div class="btn">⬇ Download free</div>
+    <div class="sub">MIT · OPEN-SOURCE · NO ACCOUNT</div>
+  </div>
+  <div class="vignette"></div>
+</div></div>
+
+<script>
+const stage = document.getElementById('stage'), wrap = document.getElementById('wrap');
+function fit(){ const k = Math.min(wrap.clientWidth/1200, wrap.clientHeight/675);
+  stage.style.transform = `scale(${k})`;
+  stage.style.left = (wrap.clientWidth-1200*k)/2+'px'; stage.style.top=(wrap.clientHeight-675*k)/2+'px'; }
+new ResizeObserver(fit).observe(wrap); fit();
+
+const DUR = 13.5, TAU = Math.PI*2;
+
+// seeded RNG so the field is identical every render
+let seed = 20261117; const rnd = ()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+
+// twinkling glowing stars — opacity driven by t with INTEGER cycles ⇒ perfect loop
+function makeStars(host, count, big){
+  const arr=[];
+  for(let i=0;i<count;i++){
+    const s=document.createElement('div'); s.className='star';
+    const sz = big ? (rnd()>.75?3:2) : (rnd()>.9?2:1);
+    s.style.width=s.style.height=sz+'px';
+    s.style.left=(rnd()*1200)+'px'; s.style.top=(rnd()*675)+'px';
+    const base = big ? 0.4+rnd()*0.5 : 0.14+rnd()*0.28;
+    if (big && rnd()>0.68) s.classList.add('glow');
+    host.appendChild(s);
+    arr.push({ el:s, base, freq:(rnd()>.5?1:2), phase:rnd()*TAU });
+  }
+  return arr;
+}
+const starsNear = makeStars(document.getElementById('stars'), 64, true);
+const starsFar  = makeStars(document.getElementById('starsFar'), 80, false);
+const allStars = starsNear.concat(starsFar);
+
+const nebA=document.getElementById('nebA'), nebB=document.getElementById('nebB'), nebC=document.getElementById('nebC');
+const logo=document.getElementById('logo'), glow=document.getElementById('glow'),
+      wm=document.getElementById('wordmark'), tag=document.getElementById('tag'),
+      hl=document.getElementById('hl'), chips=[...document.querySelectorAll('.chip')],
+      cta=document.getElementById('cta');
+// smootherstep: gentle ease-IN and ease-OUT (0 slope at both ends)
+const ease=(t,a,b)=>{ if(t<=a)return 0; if(t>=b)return 1; const x=(t-a)/(b-a); return x*x*x*(x*(x*6-15)+10); };
+const band=(t,a,b,c,d)=> ease(t,a,b) - ease(t,c,d);
+
+function frame(t){
+  const u = t/DUR;
+  // galaxy: nebulae drift on integer cycles (loop-safe), stars twinkle
+  nebA.style.transform = `translate(${18*Math.sin(TAU*u)}px, ${14*Math.cos(TAU*u)}px)`;
+  nebB.style.transform = `translate(${-16*Math.cos(TAU*u)}px, ${12*Math.sin(TAU*u)}px)`;
+  nebC.style.transform = `translate(${12*Math.sin(TAU*u + 1.5)}px, ${-10*Math.cos(TAU*u)}px)`;
+  for(const s of allStars){
+    const o = s.base * (0.72 + 0.28*Math.sin(TAU*s.freq*u + s.phase));
+    s.el.style.opacity = Math.max(0, Math.min(1, o)).toFixed(3);
+  }
+  // logo: constant presence, slow breathing (2 full cycles ⇒ equal at ends)
+  logo.style.transform = `translate(-50%,-50%) scale(${1 + 0.016*Math.sin(TAU*2*u)})`;
+  glow.style.opacity = 0.5 + 0.28*Math.sin(TAU*2*u);
+  // --- slower, readable beats (long holds) ---
+  wm.style.opacity = band(t, 1.0,2.3, 12.3,13.3);
+  wm.style.transform = `translateY(${(1-ease(t,1.0,2.3))*16}px)`;
+  tag.style.opacity = band(t, 1.8,3.1, 12.2,13.2);
+  hl.style.setProperty('--hl', (ease(t,2.6,3.5) - ease(t,12.2,12.9)).toFixed(3));
+  chips.forEach((c,i)=>{ const a=3.2+i*0.42;
+    c.style.opacity = band(t, a,a+0.8, 12.3,13.1);
+    c.style.transform = `translateY(${(1-ease(t,a,a+0.8))*14}px)`; });
+  const co = band(t, 4.6,5.9, 12.5,13.3);
+  cta.style.opacity = co;
+  cta.style.transform = `scale(${1 + 0.02*Math.sin(TAU*2*u)*Math.min(1,co)})`;
+}
+
+let t0=null, paused=false;
+function loop(ts){ if(t0==null)t0=ts; if(!paused){ frame(((ts-t0)/1000)%DUR); } requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+window.__dur = DUR;
+window.__reset = ()=>{ t0=null; };
+window.__pause = (v)=>{ paused=v!==false; };
+window.__frameAt = (t)=>{ paused=true; frame(t); };
+</script>
+</body>
+</html>
