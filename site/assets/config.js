@@ -21,6 +21,24 @@ window.VT.downloadUrl = window.VT.lockerUrl && window.VT.lockerUrl.trim()
 (function () {
   var locked = !!(window.VT.lockerUrl && window.VT.lockerUrl.trim());
 
+  // Particle burst from a point (download-click flourish)
+  function burst(x, y) {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    for (var i = 0; i < 18; i++) {
+      var p = document.createElement("div");
+      p.className = "vt-spark";
+      p.style.left = x + "px"; p.style.top = y + "px";
+      document.body.appendChild(p);
+      var ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 80;
+      var ex = Math.cos(ang) * dist, ey = Math.sin(ang) * dist;
+      p.animate([
+        { transform: "translate(-50%,-50%) scale(1)", opacity: 1 },
+        { transform: "translate(calc(-50% + " + ex.toFixed(0) + "px),calc(-50% + " + ey.toFixed(0) + "px)) scale(0)", opacity: 0 }
+      ], { duration: 650 + Math.random() * 250, easing: "cubic-bezier(.2,.7,.2,1)" })
+        .onfinish = function () { this.effect.target.remove(); };
+    }
+  }
+
   // ── Inline popup (projectreal.gg style) — built once, reused everywhere ──
   function buildModal() {
     var o = document.createElement("div");
@@ -56,6 +74,7 @@ window.VT.downloadUrl = window.VT.lockerUrl && window.VT.lockerUrl.trim()
         a.href = window.VT.lockerUrl.trim();      // still works if JS fails
         a.addEventListener("click", function (e) {
           e.preventDefault();
+          burst(e.clientX, e.clientY);
           modal.classList.add("open");
         });
       } else {
