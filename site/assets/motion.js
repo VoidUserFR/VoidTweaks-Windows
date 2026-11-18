@@ -1,4 +1,17 @@
 // VoidTweaks motion — GSAP ScrollTrigger reveals, parallax, count-up, 3D logo tilt.
+
+// Spotlight hover on cards (pure DOM, no GSAP dependency).
+(function () {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.addEventListener("pointermove", function (e) {
+    var card = e.target.closest && e.target.closest(".card");
+    if (!card) return;
+    var r = card.getBoundingClientRect();
+    card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    card.style.setProperty("--my", (e.clientY - r.top) + "px");
+  });
+})();
+
 (function () {
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var hasGsap = window.gsap && window.ScrollTrigger;
