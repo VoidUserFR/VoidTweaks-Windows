@@ -26,6 +26,16 @@ Skills install into `~/.claude/skills/` (user-global) or via `/plugin`.
 | **html-demo** | `MengTo/Skills` | Draw an app demo live in HTML (looks recorded, stays crisp). Used for the README GIF. | `npx skills add MengTo/Skills --skill html-demo` |
 | **everything-claude-code (ECC)** | `WorldFlowAI/everything-claude-code` | Big workflow pack: code-review, security-review, planner, TDD, refactor agents. | `claude plugin marketplace add WorldFlowAI/everything-claude-code` then `claude plugin install everything-claude-code` |
 
+## 🧩 Added for web/coding (this session)
+
+| Skill | Source | What it does | Install |
+|---|---|---|---|
+| **modern-web-guidance** | `GoogleChrome/modern-web-guidance` | Google Chrome team's up-to-date HTML/CSS/JS best-practices search (modals, container queries, view transitions, Core Web Vitals, a11y…). | `git clone https://github.com/GoogleChrome/modern-web-guidance` → copy `skills/modern-web-guidance` into `~/.claude/skills/` |
+| **chrome-extensions** | `GoogleChrome/modern-web-guidance` | Build/publish Chrome extensions (Manifest V3). | same repo → copy `skills/chrome-extensions` into `~/.claude/skills/` |
+| **superpowers** ✅ | `superpowers-dev` (plugin) | Already installed (v7.0.2): brainstorming, systematic-debugging, TDD, writing-plans, code-review — covers C#/Python/HTML coding workflow. | `/plugin marketplace add obra/superpowers-marketplace` then `/plugin install superpowers` |
+
+> **C# / Lua / Python dedicated skills:** no vetted single-language skill found. **superpowers** (installed) + **modern-web-guidance** cover the real work. To browse more, use the curated list **[travisvn/awesome-claude-skills](https://github.com/travisvn/awesome-claude-skills)** (Claude Code–focused) or **ComposioHQ/awesome-claude-skills**.
+
 ---
 
 ## 🟡 Mentioned / talked about but NOT installed
@@ -39,7 +49,7 @@ These came up this session but I did **not** install them (either they're not a 
 | **shadcn/ui** | `ui.shadcn.com` | The React component CLI those blocks install through. Web only. | `npx shadcn@latest init` |
 | **browser-video-recording** | Anthropic skill (referenced by html-demo) | Records a real browser to MP4. We never installed it; html-demo just mentions it. | Look it up in the skills catalog if needed. |
 | **website-to-motion-design** | Anthropic skill (referenced by html-demo) | Turns a page into a fixed-length motion film. Only referenced, not installed. | Skills catalog. |
-| **superpowers** | skill pack | Already present in this environment (brainstorming, debugging, TDD, etc.) — didn't install it, it's just there. | Already available here. |
+| *(superpowers — now confirmed installed, moved up to the web/coding section)* | | | |
 
 > Tooling used but already present: **Playwright** (frame capture), **Pillow** (WebP encoding), **skillfish** / `npx skills` (skill installers), **Inno Setup** (the installer builder).
 
@@ -55,6 +65,8 @@ These came up this session but I did **not** install them (either they're not a 
 | https://skiper-ui.com/ | React UI components. Install a block: `npx shadcn add @skiper-ui/skiper40`. |
 | https://componentry.dev/ | Component library / UI building blocks. |
 | https://gsap.com/ | GSAP — the pro JS animation library (timelines, scroll, SVG). |
+| https://reactdrops.dev/ | React component "drops" — copy-paste animated UI pieces. |
+| https://github.com/travisvn/awesome-claude-skills | Curated catalog of Claude Code skills (browse for more C#/Python/etc). |
 
 ---
 

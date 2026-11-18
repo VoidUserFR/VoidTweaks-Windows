@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guide — How to use VoidTweaks</title>
+<meta name="description" content="Step-by-step guide to using VoidTweaks: install, run as admin, restore points, applying and queuing tweaks, reverting, cleanup, tools and BIOS." />
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="sky"><div class="neb a"></div><div class="neb b"></div><div class="neb c"></div></div>
+<div id="stars"></div>
+
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />VoidTweaks</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="guide.html" class="active">Guide</a>
+    <a href="faq.html">FAQ</a>
+    <a href="download.html">Download</a>
+    <a class="gh" href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub ↗</a>
+  </nav>
+</div></header>
+
+<main class="wrap" style="padding-top:40px">
+  <div class="sec-head" style="text-align:left;max-width:none;margin-bottom:24px">
+    <div class="eyebrow">Guide</div>
+    <h2>How to use VoidTweaks</h2>
+    <p style="margin-top:6px">From first launch to advanced tools — everything, in order. Takes about 10 minutes to read.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="toc">
+      <a href="#install">1. Install</a>
+      <a href="#admin">2. Run as administrator</a>
+      <a href="#restore">3. Restore point first</a>
+      <a href="#layout">4. The layout</a>
+      <a href="#apply">5. Applying tweaks</a>
+      <a href="#queue">6. The queue</a>
+      <a href="#revert">7. Reverting &amp; Undo</a>
+      <a href="#scan">8. Scan</a>
+      <a href="#cleanup">9. Cleanup &amp; Boost</a>
+      <a href="#tools">10. Tools</a>
+      <a href="#bios">11. BIOS (advanced)</a>
+      <a href="#tips">12. Tips</a>
+    </aside>
+
+    <div class="prose">
+      <h2 id="install">1. Install</h2>
+      <p>Two ways — both self-contained, so <b>.NET is not required</b>:</p>
+      <ul>
+        <li><b>Installer (easiest):</b> grab <code>VoidTweaks-Setup.exe</code> from the <a href="download.html">Download page</a> and run it.</li>
+        <li><b>Portable:</b> grab <code>VoidTweaks-portable.zip</code>, unzip, and run <code>VoidTweaks.exe</code>. Keep the <code>.json</code> and <code>.ps1</code> files next to the <code>.exe</code>.</li>
+      </ul>
+      <div class="note warn"><b>"Windows protected your PC"?</b> VoidTweaks is unsigned, so SmartScreen warns on first run. It's a false positive — click <b>More info → Run anyway</b>. Details in the <a href="faq.html">FAQ</a>.</div>
+
+      <h2 id="admin">2. Run as administrator</h2>
+      <p>Many tweaks change system-level settings and need admin rights. If you launched without them, the app shows a yellow banner — <b>"Not elevated — admin tweaks are disabled until you restart as administrator."</b> Click <b>Restart as administrator</b> (top-right), or right-click the exe → <i>Run as administrator</i>.</p>
+      <div class="note tip">Tweaks that need admin show an <code>ADMIN</code> badge. Non-admin tweaks still work without elevation.</div>
+
+      <h2 id="restore">3. Restore point first</h2>
+      <p>At the top you'll see <b>"Restore point first"</b> — leave it <b>ticked</b> (it's on by default). Before VoidTweaks applies anything, it creates a Windows System Restore point, so you can roll the whole machine back if something feels off. There's also a <b>Dry run</b> checkbox that shows what <i>would</i> run without changing anything — great for a first look.</p>
+
+      <h2 id="layout">4. The layout</h2>
+      <p>VoidTweaks uses a three-pane layout:</p>
+      <ul>
+        <li><b>Icon rail</b> (far left): Home · Optimize · Tools · Fixes · Settings.</li>
+        <li><b>Category column</b>: within Optimize — All, Favorites, Needs attention, and groups (Performance, Gaming, Privacy, Network, Visual, Explorer, Advanced, Services, AI &amp; Bloat, Updates).</li>
+        <li><b>Content</b>: the tweak cards themselves.</li>
+      </ul>
+      <p>The top bar (Boost · Scan · Apply all · Revert all · Undo last · Restore point first · Dry run) is always available.</p>
+      <img src="assets/screen-tweaks.png" alt="The Optimize / tweaks view" />
+
+      <h2 id="apply">5. Applying tweaks</h2>
+      <p>Each tweak is a card. It shows what it does, its <b>risk level</b> (low / medium / high), any <code>ADMIN</code> or <code>REBOOT</code> badges, and the exact commands on hover.</p>
+      <ol class="steps">
+        <li><h3>Find a tweak</h3>Browse a category, or use <code>Ctrl+K</code> to search by name.</li>
+        <li><h3>Toggle it on</h3>Flip the switch. It turns <b style="color:var(--green)">green</b> = applied. Flip it off to revert (<b style="color:var(--red)">red</b> = not applied).</li>
+        <li><h3>Or apply in bulk</h3>Use the state/risk filter chips, then <b>Apply all shown</b> / <b>Revert all shown</b>.</li>
+        <li><h3>★ Favorite</h3>Star any tweak to pin it to the Favorites tab.</li>
+      </ol>
+
+      <h2 id="queue">6. The queue</h2>
+      <p>You don't have to wait for one tweak to finish before clicking the next. Clicks <b>queue up</b> and run one after another. A <b>"N queued"</b> badge appears in the header — click it to clear anything still pending. The <b>Undo</b> button then covers the whole batch you just queued.</p>
+      <div class="note tip">Toggle several tweaks quickly and watch them apply in sequence — no more "busy, wait" blocking.</div>
+
+      <h2 id="revert">7. Reverting &amp; Undo</h2>
+      <ul>
+        <li><b>Single tweak:</b> flip its toggle back off.</li>
+        <li><b>Undo last:</b> reverts the tweaks you just applied (the whole queue run).</li>
+        <li><b>Revert all:</b> reverts every applied tweak in the current view.</li>
+        <li><b>Full rollback:</b> Tools → Restore points → restore to a point from before your changes.</li>
+      </ul>
+
+      <h2 id="scan">8. Scan</h2>
+      <p>Some tweaks aren't registry values (debloat, power plan, hibernation, boot settings, memory compression). The <b>Scan</b> button in the top bar probes your live system so every card shows its real current state. VoidTweaks also scans automatically in the background on launch.</p>
+
+      <h2 id="cleanup">9. Cleanup &amp; Boost</h2>
+      <ul>
+        <li><b>Clean everything</b> (Tools → Cleanup): temp, Windows cache, thumbnails, Store cache, Recycle Bin, DNS flush, SSD trim, RAM free — in one click.</li>
+        <li><b>Bulk debloat:</b> remove common pre-installed junk (Xbox leftovers, Teams chat, Copilot, etc.) in one go — reversible from the Store.</li>
+        <li><b>Boost now:</b> RAMMap-style standby-list + working-set cleanup to free memory immediately.</li>
+      </ul>
+
+      <h2 id="tools">10. Tools</h2>
+      <ul>
+        <li><b>Restore points</b> — create, list and restore; a change-history audit log shows what you applied and when.</li>
+        <li><b>Startup &amp; Process managers</b> — trim what launches with Windows, inspect running processes.</li>
+        <li><b>Presets</b> — built-in and your own; export/import to share a setup.</li>
+        <li><b>Health</b> — a 0–100 score with live gauges and checks (updates, antivirus, pending reboots, startup load, drive type).</li>
+        <li><b>System report</b> — export a clean HTML with your specs, power plan and applied tweaks. Nothing personal leaves your PC unless you share the file.</li>
+        <li><b>Game profiles</b> — one-click, reversible tweak sets per game type (competitive FPS, AAA, streaming, low-end).</li>
+      </ul>
+
+      <h2 id="bios">11. BIOS (advanced)</h2>
+      <p>The <b>BIOS &amp; Firmware</b> tool reads your UEFI, checks Secure Boot / TPM / virtualization, gives safe spec-aware tuning steps, and can reboot straight into UEFI setup. <b>BIOS tweaks</b> (HPET, dynamic tick, TSC, mitigations, C-states) sit behind an <b>unskippable 15-second warning</b>. VoidTweaks guides you — it never flips firmware switches for you.</p>
+      <div class="note warn">Only change BIOS settings you understand. Wrong firmware settings can prevent your PC from booting.</div>
+
+      <h2 id="tips">12. Tips</h2>
+      <ul>
+        <li>Keep <b>Restore point first</b> on, and only apply what you understand.</li>
+        <li>Use <b>Dry run</b> to preview commands before committing.</li>
+        <li>Change the language in <b>Settings</b> (9 available) and pick a <b>style</b> (NullZone / Legacy).</li>
+        <li>Some tweaks need a <b>reboot</b> to fully take effect (they carry a <code>REBOOT</code> badge).</li>
+      </ul>
+
+      <div class="note"><b>Still stuck?</b> Check the <a href="faq.html">FAQ</a> or <a href="https://github.com/VoidUserFR/VoidTweaks-Windows/issues">open an issue on GitHub</a>.</div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <div>VoidTweaks — MIT licensed. Use at your own risk.</div>
+  <div><a href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub</a> · <a href="https://github.com/VoidUserFR/VoidTweaks-Windows/issues">Report a bug</a> · <a href="faq.html">FAQ</a></div>
+</div></footer>
+<script src="assets/stars.js"></script>
+</body>
+</html>

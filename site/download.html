@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Download — VoidTweaks</title>
+<meta name="description" content="Download VoidTweaks free — installer or portable zip, self-contained (no .NET required), with SHA-256 checksums." />
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="sky"><div class="neb a"></div><div class="neb b"></div><div class="neb c"></div></div>
+<div id="stars"></div>
+
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />VoidTweaks</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="guide.html">Guide</a>
+    <a href="faq.html">FAQ</a>
+    <a href="download.html" class="active">Download</a>
+    <a class="gh" href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub ↗</a>
+  </nav>
+</div></header>
+
+<main class="wrap" style="padding-top:40px;max-width:800px">
+  <div class="sec-head"><div class="eyebrow">Download</div><h2>Get VoidTweaks — free</h2><p>Self-contained. .NET is <b>not</b> required. Windows 11 (x64).</p></div>
+
+  <div class="dl">
+    <div class="meta"><h3>🪄 Installer <span style="color:var(--faint);font-weight:500">(easiest)</span></h3><p>Sets up shortcuts. Run it and you're done.</p></div>
+    <a class="btn primary" href="https://github.com/VoidUserFR/VoidTweaks-Windows/releases/latest">Latest release ↗</a>
+  </div>
+  <div class="dl">
+    <div class="meta"><h3>📦 Portable (zip)</h3><p>No install — unzip and run <code>VoidTweaks.exe</code>. Keep the <code>.json</code>/<code>.ps1</code> next to it.</p></div>
+    <a class="btn ghost" href="https://github.com/VoidUserFR/VoidTweaks-Windows/releases/latest">Latest release ↗</a>
+  </div>
+
+  <div class="note warn">
+    <b>"Windows protected your PC" on first run?</b> VoidTweaks is unsigned, so SmartScreen warns — it's a false positive. Click <b>More info → Run anyway</b>. Full explanation in the <a href="faq.html">FAQ</a>, and submission steps in <a href="https://github.com/VoidUserFR/VoidTweaks-Windows/blob/main/docs/report-false-positive.md">report-false-positive.md</a>.
+  </div>
+
+  <div class="prose" style="margin-top:10px">
+    <h2>Verify your download</h2>
+    <p>Each release ships a <code>SHA256SUMS</code> file. To check a download matches, run in PowerShell:</p>
+    <p><code>Get-FileHash .\VoidTweaks-Setup.exe -Algorithm SHA256</code></p>
+    <p>and compare it to the value in the release's checksums file.</p>
+
+    <h2>Build from source</h2>
+    <p>Prefer to build it yourself? You'll need the <a href="https://dotnet.microsoft.com/download">.NET 10 SDK</a>:</p>
+    <p><code>cd VoidTweaksApp &amp;&amp; dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true</code></p>
+    <p>Everything a tweak does is visible in <code>tweaks.json</code> — no hidden actions.</p>
+  </div>
+
+  <div class="cta-band" style="margin-top:30px">
+    <h2>New here?</h2>
+    <p>Read the guide first — install, restore points, applying &amp; reverting tweaks, and the tools.</p>
+    <a class="btn primary" href="guide.html">Read the guide →</a>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <div>VoidTweaks — MIT licensed. Use at your own risk.</div>
+  <div><a href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub</a> · <a href="guide.html">Guide</a> · <a href="faq.html">FAQ</a></div>
+</div></footer>
+<script src="assets/stars.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FAQ — VoidTweaks</title>
+<meta name="description" content="Frequently asked questions about VoidTweaks: is it safe, does it phone home, will it break Windows Update, why does SmartScreen warn, and more." />
+<link rel="icon" href="assets/logo.png" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div class="sky"><div class="neb a"></div><div class="neb b"></div><div class="neb c"></div></div>
+<div id="stars"></div>
+
+<header class="nav"><div class="wrap">
+  <a class="brand" href="index.html"><img src="assets/logo.png" alt="" />VoidTweaks</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="guide.html">Guide</a>
+    <a href="faq.html" class="active">FAQ</a>
+    <a href="download.html">Download</a>
+    <a class="gh" href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub ↗</a>
+  </nav>
+</div></header>
+
+<main class="wrap" style="padding-top:40px">
+  <div class="sec-head"><div class="eyebrow">FAQ</div><h2>Frequently asked questions</h2></div>
+
+  <div class="faq prose" style="max-width:800px">
+    <details open>
+      <summary>Is it safe?</summary>
+      <p>Every change is reversible and shown in plain language, and a restore point is offered before changes. The full source is public. Still — these are real system changes, so only apply what you understand and keep "Restore point first" on.</p>
+    </details>
+    <details>
+      <summary>Does it phone home / collect data?</summary>
+      <p>No telemetry, no accounts. It only talks to the network when <i>you</i> run a test, install an app, or when it checks GitHub for a new version.</p>
+    </details>
+    <details>
+      <summary>Why does Windows say "Windows protected your PC" / "Unknown publisher"?</summary>
+      <p>VoidTweaks isn't code-signed yet (a signing certificate costs money), so Windows SmartScreen shows an "unrecognized app / unknown publisher" warning on first run, and some antivirus engines flag self-contained .NET apps that touch system settings. It's a <b>false positive</b> — the full source is right here on GitHub.</p>
+      <p>To run it now: <b>More info → Run anyway</b>. To get it cleared properly (Defender + SmartScreen submission steps), see <a href="https://github.com/VoidUserFR/VoidTweaks-Windows/blob/main/docs/report-false-positive.md">report-false-positive.md</a>. The only instant, reliable fix is a code-signing certificate.</p>
+    </details>
+    <details>
+      <summary>Will it break Windows Update or my PC?</summary>
+      <p>No tweak blocks updates unless you explicitly apply one that does, and it's reversible. Keep "Restore point first" on and you can always roll back.</p>
+    </details>
+    <details>
+      <summary>Installer or portable — which?</summary>
+      <p>The <b>installer</b> sets up shortcuts and is easiest. The <b>portable</b> zip needs no install — unzip and run <code>VoidTweaks.exe</code>, keeping the <code>.json</code>/<code>.ps1</code> files beside it. Both are self-contained; .NET is not required.</p>
+    </details>
+    <details>
+      <summary>Do I need to run it as administrator?</summary>
+      <p>Only for admin-level tweaks (marked with an <code>ADMIN</code> badge). The app shows a banner and a "Restart as administrator" button when elevation is needed. Everything else works without it.</p>
+    </details>
+    <details>
+      <summary>How do I undo a change?</summary>
+      <p>Flip the tweak's toggle back off, use <b>Undo last</b>, <b>Revert all</b>, or restore to a point in <b>Tools → Restore points</b>. Almost everything is fully reversible.</p>
+    </details>
+    <details>
+      <summary>Is it really free?</summary>
+      <p>Yes — MIT licensed, no paywall, no "Pro" tier, no feature held hostage. If it helped, a ⭐ on GitHub genuinely helps it reach more people.</p>
+    </details>
+    <details>
+      <summary>What languages are supported?</summary>
+      <p>Nine: English, Portuguese, Russian, French, German, Spanish, Chinese, Italian and Japanese. Switch in Settings.</p>
+    </details>
+    <details>
+      <summary>How do I uninstall it?</summary>
+      <p>If you used the installer: Windows Settings → Apps → VoidTweaks → Uninstall. Portable: just delete the folder. Any tweaks you applied stay until you revert them — revert what you want first, or restore to an earlier point.</p>
+    </details>
+    <details>
+      <summary>Which Windows versions work?</summary>
+      <p>Built for Windows 11 (x64). Many tweaks work on Windows 10 too, but it's tested and designed for 11.</p>
+    </details>
+    <details>
+      <summary>Can I contribute?</summary>
+      <p>Yes — issues and PRs are welcome, especially new tweaks (add them to <code>tweaks.json</code>), translations and bug reports. See the <a href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub repo</a>.</p>
+    </details>
+  </div>
+
+  <div class="cta-band" style="margin-top:36px">
+    <h2>Didn't find your answer?</h2>
+    <p>Open an issue on GitHub — bugs and questions both welcome.</p>
+    <a class="btn ghost" href="https://github.com/VoidUserFR/VoidTweaks-Windows/issues">Open an issue ↗</a>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <div>VoidTweaks — MIT licensed. Use at your own risk.</div>
+  <div><a href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub</a> · <a href="guide.html">Guide</a> · <a href="download.html">Download</a></div>
+</div></footer>
+<script src="assets/stars.js"></script>
+</body>
+</html>
