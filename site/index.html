@@ -5,11 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>VoidTweaks — free, open, fully-reversible Windows 11 optimizer</title>
 <meta name="description" content="VoidTweaks is a free and open-source Windows 11 optimizer. Every change is shown in plain language, nothing phones home, and almost everything reverts in one click." />
+<meta property="og:title" content="VoidTweaks — Your Windows, unlocked." />
+<meta property="og:description" content="Free, open, fully-reversible Windows 11 optimizer. 142 tweaks, 1-click revert, 0 telemetry." />
+<meta property="og:image" content="assets/banner.webp" />
+<meta name="theme-color" content="#07060b" />
 <link rel="icon" href="assets/logo.png" />
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-<div class="sky"><div class="neb a"></div><div class="neb b"></div><div class="neb c"></div></div>
+<div class="sky"><div class="neb a" data-par="0.15"></div><div class="neb b" data-par="0.28"></div><div class="neb c" data-par="0.2"></div></div>
 <div id="stars"></div>
 
 <header class="nav"><div class="wrap">
@@ -19,84 +23,131 @@
     <a href="guide.html">Guide</a>
     <a href="faq.html">FAQ</a>
     <a href="download.html">Download</a>
-    <a class="gh" href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub ↗</a>
+    <a class="gh" data-vt="github" href="#">GitHub ↗</a>
   </nav>
 </div></header>
 
 <main>
+  <!-- HERO -->
   <section class="hero wrap">
-    <img class="logo" src="assets/logo.png" alt="VoidTweaks logo" />
-    <h1>Your Windows,<br/>unlocked.</h1>
-    <p class="lead">A free, open and <b>fully-reversible</b> Windows&nbsp;11 optimizer. Every tweak is shown in plain language, nothing phones home, and almost everything reverts in one click.</p>
-    <div class="cta">
-      <a class="btn primary" href="download.html">⬇ Download free</a>
-      <a class="btn ghost" href="https://github.com/VoidUserFR/VoidTweaks-Windows">★ View on GitHub</a>
+    <div class="halo3d" id="halo3d">
+      <img class="logo" src="assets/logo.png" alt="VoidTweaks logo" />
     </div>
-    <div class="pills">
+    <h1 class="reveal">Your Windows,<br/>unlocked.</h1>
+    <p class="lead reveal">A free, open and <b>fully-reversible</b> Windows&nbsp;11 optimizer. Every tweak in plain language, nothing phones home, one-click revert on almost everything.</p>
+    <div class="cta reveal">
+      <a class="btn primary" data-vt="download" href="#">⬇ Download free</a>
+      <a class="btn ghost" data-vt="github" href="#">★ View on GitHub</a>
+    </div>
+    <p class="adstep-note reveal" data-vt-fallback style="display:none">
+      One quick ad-step via <span id="lockerName">work.ink</span> supports the project · <a data-vt="releases" href="#">no ads? get it on GitHub →</a>
+    </p>
+    <div class="pills reveal">
       <span class="pill"><b>142</b> tweaks</span>
       <span class="pill"><b>1-click</b> revert</span>
       <span class="pill"><b>0</b> telemetry</span>
       <span class="pill"><b>9</b> languages</span>
       <span class="pill">MIT · open-source</span>
     </div>
+    <div class="scroll-hint reveal">scroll ↓</div>
   </section>
 
+  <!-- STATS BAND -->
   <section class="wrap">
-    <div class="sec-head">
+    <div class="statband">
+      <div class="stat"><div class="num" data-count="142">0</div><div class="lbl">Tweaks</div></div>
+      <div class="stat"><div class="num" data-count="9">0</div><div class="lbl">Languages</div></div>
+      <div class="stat"><div class="num" data-count="100" data-suffix="%">0</div><div class="lbl">Reversible</div></div>
+      <div class="stat"><div class="num" data-count="0">0</div><div class="lbl">Telemetry</div></div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="wrap">
+    <div class="sec-head reveal">
       <div class="eyebrow">Why VoidTweaks</div>
       <h2>Not another closed-box "optimizer"</h2>
       <p>Most PC optimizers hide what they change, nag you to pay, and sometimes leave your system worse. VoidTweaks is the opposite.</p>
     </div>
-    <div class="grid">
+    <div class="grid stagger">
       <div class="card"><div class="ic">🔍</div><h3>Fully transparent</h3><p>Every tweak's exact commands live in <code>tweaks.json</code> and show in a tooltip. No hidden actions.</p></div>
       <div class="card"><div class="ic">↩️</div><h3>Reversible</h3><p>Almost everything is a toggle — apply and revert in one click. A restore point is offered before changes.</p></div>
       <div class="card"><div class="ic">🔒</div><h3>100% local</h3><p>No telemetry, no accounts. It only touches the network when <i>you</i> run a test or check for an update.</p></div>
       <div class="card"><div class="ic">💸</div><h3>Free &amp; open</h3><p>MIT licensed. No paywall, no "Pro" upsell, no feature held hostage.</p></div>
       <div class="card"><div class="ic">🪶</div><h3>Self-contained</h3><p>One <code>.exe</code>. .NET is <b>not</b> required on the target PC.</p></div>
-      <div class="card"><div class="ic">🧬</div><h3>Deep but safe</h3><p>Performance, privacy, network, gaming, BIOS guidance — with risk levels and an unskippable warning on the scary stuff.</p></div>
+      <div class="card"><div class="ic">🧬</div><h3>Deep but safe</h3><p>Performance, privacy, network, gaming and BIOS guidance — with risk levels and warnings on the scary stuff.</p></div>
     </div>
   </section>
 
+  <!-- FEATURE ROWS (alternating) -->
   <section class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">A look inside</div>
-      <h2>See it. Change it. Revert it.</h2>
-      <p>A clean three-pane layout — icon rail → category → content — over an animated black-hole background.</p>
+    <div class="frow reveal">
+      <div class="ftxt">
+        <div class="eyebrow">See everything</div>
+        <h2>See it. Change it. Revert it.</h2>
+        <p>A clean three-pane layout — icon rail → category → content. Each tweak card glows <b style="color:var(--green)">green when applied</b>, <b style="color:var(--red)">red when not</b>, shows its risk level, and reveals the exact commands it runs.</p>
+        <a class="btn ghost" href="guide.html">How it works →</a>
+      </div>
+      <div class="fimg"><img src="assets/screen-tweaks.png" alt="VoidTweaks tweak list" loading="lazy" /></div>
     </div>
-    <img src="assets/screen-tweaks.png" alt="VoidTweaks tweak list" style="width:100%;border-radius:16px;border:1px solid var(--panel-br);box-shadow:0 30px 80px rgba(0,0,0,.6)" />
+
+    <div class="frow rev reveal">
+      <div class="ftxt">
+        <div class="eyebrow">Health &amp; cleanup</div>
+        <h2>Know your PC. Clean it in one click.</h2>
+        <p>A scored 0–100 health snapshot with live gauges and real checks. Then <b>Clean everything</b> — temp, caches, Recycle Bin, DNS flush, SSD trim and RAM free — in a single click.</p>
+        <a class="btn ghost" href="guide.html#cleanup">Cleanup &amp; Boost →</a>
+      </div>
+      <div class="fimg"><img src="assets/screen-health.png" alt="VoidTweaks health check" loading="lazy" /></div>
+    </div>
+
+    <div class="frow reveal">
+      <div class="ftxt">
+        <div class="eyebrow">Queue it up</div>
+        <h2>Apply a dozen tweaks without waiting.</h2>
+        <p>Clicks <b>queue</b> and run one after another — no "busy, wait" blocking. A live badge shows what's pending, and <b>Undo</b> covers the whole batch. A restore point is taken first.</p>
+        <a class="btn ghost" href="guide.html#queue">The queue →</a>
+      </div>
+      <div class="fimg"><img src="assets/screen-cleanup.png" alt="VoidTweaks cleanup" loading="lazy" /></div>
+    </div>
   </section>
 
+  <!-- WHAT'S INSIDE -->
   <section class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">What's inside</div>
-      <h2>142 tweaks, grouped by purpose</h2>
-    </div>
-    <div class="grid">
+    <div class="sec-head reveal"><div class="eyebrow">What's inside</div><h2>142 tweaks, grouped by purpose</h2></div>
+    <div class="grid stagger">
       <div class="card"><h3>⚡ Performance &amp; Gaming</h3><p>Power plans, latency tweaks, game profiles, a CPU/GPU stress test and plain-English overclock guidance.</p></div>
-      <div class="card"><h3>🛡️ Privacy &amp; Debloat</h3><p>Kill telemetry, remove pre-installed junk in one go (reversible from the Store), tighten Windows.</p></div>
+      <div class="card"><h3>🛡️ Privacy &amp; Debloat</h3><p>Kill telemetry, remove pre-installed junk in one go (reversible from the Store).</p></div>
       <div class="card"><h3>🌐 Network</h3><p>DNS benchmark, region-tuned advice, Wi-Fi stress test with jitter &amp; packet loss.</p></div>
       <div class="card"><h3>🧹 Cleanup &amp; Boost</h3><p>Temp, caches, Recycle Bin, DNS flush, SSD trim and RAM free — in one click.</p></div>
-      <div class="card"><h3>🧰 Tools</h3><p>Restore points, startup &amp; process managers, winget installer, presets, health score, system report export.</p></div>
-      <div class="card"><h3>🧬 BIOS &amp; Firmware</h3><p>Reads your UEFI, checks Secure Boot / TPM, gives safe tuning steps, reboots straight into setup.</p></div>
+      <div class="card"><h3>🧰 Tools</h3><p>Restore points, startup &amp; process managers, winget installer, presets, system report export.</p></div>
+      <div class="card"><h3>🧬 BIOS &amp; Firmware</h3><p>Reads your UEFI, checks Secure Boot / TPM, safe tuning steps, reboots into setup.</p></div>
     </div>
   </section>
 
+  <!-- CTA -->
   <section class="wrap">
-    <div class="cta-band">
+    <div class="cta-band reveal">
       <h2>Ready to tune your PC?</h2>
       <p>Free, open-source, and reversible. Keep "Restore point first" on, apply what you understand.</p>
       <div class="cta" style="justify-content:center">
-        <a class="btn primary" href="download.html">⬇ Download VoidTweaks</a>
+        <a class="btn primary" data-vt="download" href="#">⬇ Download VoidTweaks</a>
         <a class="btn ghost" href="guide.html">Read the guide →</a>
       </div>
+      <p class="adstep-note" data-vt-fallback style="display:none;margin-top:14px">One quick ad-step supports the project · <a data-vt="releases" href="#">no ads? GitHub →</a></p>
     </div>
   </section>
 </main>
 
 <footer><div class="wrap">
   <div>VoidTweaks — MIT licensed. Use at your own risk.</div>
-  <div><a href="https://github.com/VoidUserFR/VoidTweaks-Windows">GitHub</a> · <a href="https://github.com/VoidUserFR/VoidTweaks-Windows/issues">Report a bug</a> · <a href="faq.html">FAQ</a></div>
+  <div><a data-vt="github" href="#">GitHub</a> · <a data-vt="github" href="#">Report a bug</a> · <a href="faq.html">FAQ</a></div>
 </div></footer>
+
+<script src="assets/config.js"></script>
 <script src="assets/stars.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="assets/motion.js"></script>
 </body>
 </html>
