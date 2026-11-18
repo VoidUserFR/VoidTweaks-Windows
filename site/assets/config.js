@@ -7,7 +7,7 @@ window.VT = {
   // Paste your link-locker URL (work.ink / Lootlabs / Linkvertise) here.
   // The locker's DESTINATION should be the GitHub release (or a direct asset).
   // Leave "" to send the Download button straight to GitHub (no ad-step).
-  lockerUrl: "",            // e.g. "https://work.ink/xxxx/voidtweaks"
+  lockerUrl: "https://work.ink/3bax/voidtweaks",   // work.ink locked link → GitHub release
   lockerName: "work.ink",   // shown in the popup; cosmetic
 
   // Always show an honest "no ads? GitHub →" fallback inside the popup.
