@@ -274,3 +274,7 @@ header.nav.scrolled .wrap{height:52px}
   .marquee-track{animation:none}
   .divider{transform:scaleX(1);opacity:.6}
 }
+
+/* Live demo window shell */
+.demo-shell{max-width:940px;margin:0 auto;border-radius:16px}
+.demo-shell .hd-win{box-shadow:0 40px 120px -30px rgba(0,0,0,.85),0 0 70px rgba(139,124,240,.14),0 0 0 1px rgba(139,124,240,.18)}
