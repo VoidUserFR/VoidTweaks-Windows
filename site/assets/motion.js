@@ -15,6 +15,17 @@
     });
   });
 
+  // Auto-reveal every child block of a container (guide/faq long-form)
+  gsap.utils.toArray("[data-autoreveal]").forEach(function (c) {
+    gsap.utils.toArray(c.children).forEach(function (el) {
+      gsap.set(el, { opacity: 0, y: 22 });
+      gsap.to(el, {
+        opacity: 1, y: 0, duration: 0.65, ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 92%" }
+      });
+    });
+  });
+
   // Staggered children (feature grids)
   gsap.utils.toArray(".stagger").forEach(function (group) {
     var kids = group.children;
