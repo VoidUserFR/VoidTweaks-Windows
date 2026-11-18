@@ -73,6 +73,10 @@ section{padding:46px 0}
 
 /* cards grid */
 .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+/* feature card grids: flex-centered so the last row never orphans left */
+.grid.stagger{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:1080px;margin:0 auto}
+.grid.stagger>.card{flex:1 1 300px;max-width:340px}
+@media(max-width:720px){.grid.stagger>.card{flex-basis:100%;max-width:420px}}
 .card{background:var(--panel);border:1px solid var(--panel-br);border-radius:var(--r);padding:22px;
   transition:.18s}
 .card:hover{border-color:rgba(139,124,240,.5);background:rgba(139,124,240,.06);transform:translateY(-3px)}
@@ -165,3 +169,28 @@ footer a{color:var(--muted)}
 .frow p{color:var(--muted);margin:12px 0 18px;font-size:16px}
 .fimg img{width:100%;border-radius:16px;border:1px solid var(--panel-br);box-shadow:0 30px 80px rgba(0,0,0,.6)}
 @media(max-width:820px){.frow{grid-template-columns:1fr;gap:24px;margin:44px 0}.frow.rev .ftxt{order:0}}
+
+/* ── Inline download popup (locker checkpoint) ─────────────────────────── */
+.vt-ov{position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;
+  background:rgba(5,4,10,.72);backdrop-filter:blur(8px);padding:20px}
+.vt-ov.open{display:flex;animation:vtfade .25s ease}
+@keyframes vtfade{from{opacity:0}to{opacity:1}}
+.vt-modal{position:relative;max-width:420px;width:100%;text-align:center;padding:34px 28px 30px;
+  background:linear-gradient(180deg,rgba(26,20,44,.96),rgba(12,9,22,.97));
+  border:1px solid rgba(139,124,240,.35);border-radius:20px;
+  box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 60px rgba(139,124,240,.15);
+  animation:vtpop .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes vtpop{from{transform:translateY(16px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.vt-logo{width:58px;height:58px;filter:drop-shadow(0 0 16px rgba(139,124,240,.6))}
+.vt-modal h3{font-size:22px;font-weight:800;margin:12px 0 8px;letter-spacing:-.5px}
+.vt-sub{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:18px}
+.vt-step{display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:13.5px;color:#d7d3ea;
+  background:rgba(255,255,255,.04);border:1px solid var(--panel-br);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+.vt-badge{flex:none;width:22px;height:22px;border-radius:50%;background:rgba(139,124,240,.9);color:#fff;
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.vt-go{width:100%;justify-content:center;font-size:15px}
+.vt-skip{display:inline-block;margin-top:14px;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.vt-skip:hover{color:#fff}
+.vt-x{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);
+  font-size:26px;line-height:1;cursor:pointer}
+.vt-x:hover{color:#fff}
