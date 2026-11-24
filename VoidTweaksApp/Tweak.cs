@@ -161,9 +161,18 @@ public static class Engine
 
     public static Catalog Load()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "tweaks.json");
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<Catalog>(json) ?? new Catalog();
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "tweaks.json");
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Catalog>(json) ?? new Catalog();
+        }
+        catch (Exception ex)
+        {
+            // A missing/corrupt tweaks.json must not stop the app from opening.
+            App.Log("Tweak.Load", ex);
+            return new Catalog();
+        }
     }
 
     // Reuse the exact command strings by running them through PowerShell.

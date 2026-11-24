@@ -111,8 +111,8 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         if (!string.IsNullOrWhiteSpace(savedAccent)) { try { _accent = (Color)ColorConverter.ConvertFromString(savedAccent); } catch { } }
         _cat = Engine.Load();
         if (!IsAdmin()) AdminBar.Visibility = Visibility.Visible;
-        LocalizeChrome();
-        BuildNav();
+        try { LocalizeChrome(); } catch (System.Exception ex) { App.Log("LocalizeChrome", ex); }
+        try { BuildNav(); } catch (System.Exception ex) { App.Log("BuildNav", ex); }
         UpdateStatic();
         UpdateLive();
         var timer = new DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(1500) };
@@ -127,22 +127,26 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             else if (e.Key == System.Windows.Input.Key.Escape && !string.IsNullOrEmpty(_search))
             { try { SearchBox.Text = ""; } catch { } e.Handled = true; }
         };
-        InitTray();
-        RestoreWindowBounds();
+        try { InitTray(); } catch (System.Exception ex) { App.Log("InitTray", ex); }
+        try { RestoreWindowBounds(); } catch (System.Exception ex) { App.Log("RestoreWindowBounds", ex); }
         Closing += (_, _) => SaveWindowBounds();
         Loaded += (_, _) =>
         {
-            ApplyStyle(Engine.GetStyle() is { Length: > 0 } st ? st : "obsidian");
-            CheckUpdates();
-            if (Engine.FirstRun()) FirstRunTour();
-            InitLogBar();
-            InitLogoTilt();
-            InitGlowCursor();
-            // initial background scan so non-registry tweak statuses (debloat, power, boot…) resolve automatically
-            System.Threading.Tasks.Task.Run(() => { Engine.RefreshScan(); Dispatcher.Invoke(Render); });
+            try
+            {
+                ApplyStyle(Engine.GetStyle() is { Length: > 0 } st ? st : "obsidian");
+                CheckUpdates();
+                if (Engine.FirstRun()) FirstRunTour();
+                InitLogBar();
+                InitLogoTilt();
+                InitGlowCursor();
+                // initial background scan so non-registry tweak statuses (debloat, power, boot…) resolve automatically
+                System.Threading.Tasks.Task.Run(() => { try { Engine.RefreshScan(); Dispatcher.Invoke(Render); } catch (System.Exception ex) { App.Log("RefreshScan", ex); } });
+            }
+            catch (System.Exception ex) { App.Log("Loaded", ex); }
         };
-        var did = Engine.GetDiscordId();
-        if (!string.IsNullOrWhiteSpace(did)) System.Threading.Tasks.Task.Run(() => StartRpc(did));
+        try { var did = Engine.GetDiscordId(); if (!string.IsNullOrWhiteSpace(did)) System.Threading.Tasks.Task.Run(() => StartRpc(did)); }
+        catch (System.Exception ex) { App.Log("Discord", ex); }
     }
 
     // ---------------- update checker ----------------
