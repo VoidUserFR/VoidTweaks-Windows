@@ -15,6 +15,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private readonly Catalog _cat;
     private long _pi, _pk, _pu;
     private string _sel = "";
+    private bool _inSettings;   // true while the Settings view is shown (so a style change re-shows it, not the last section)
     private string _search = "";
     private bool _navving;
     private Color _accent = (Color)ColorConverter.ConvertFromString("#8B7CF0");
@@ -31,12 +32,11 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         new("obsidian", "NullZone", "#35D07A", "dark"),
         new("legacy", "Legacy", "#8B7CF0", "dark"),
-        new("event-horizon", "Event Horizon", "#8B5CF6", "soon"),
-        new("nebula", "Nebula", "#FFD45E", "soon"),
-        new("terminal", "Midnight Terminal", "#39FF6E", "soon"),
-        new("synthwave", "Synthwave", "#FF2D95", "soon"),
-        new("fluent", "Fluent Light", "#7C5CFC", "soon"),
-        new("brutal", "Neo-Brutal", "#FF5C38", "soon"),
+        new("event-horizon", "Event Horizon", "#8B5CF6", "dark"),
+        new("nebula", "Nebula", "#FFD45E", "dark"),
+        new("terminal", "Midnight Terminal", "#39FF6E", "dark"),
+        new("synthwave", "Synthwave", "#FF2D95", "dark"),
+        new("fluent", "Fluent", "#7C5CFC", "dark"),
     };
     private System.Windows.Forms.NotifyIcon? _tray;
     private string? _firstResult;
@@ -302,15 +302,22 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
             BuildBackground(def.Key);
             ApplyAccent();
-            try { StatsBar.Visibility = Ob ? Visibility.Collapsed : Visibility.Visible; } catch { }
+            try { StatsBar.Visibility = Pane ? Visibility.Collapsed : Visibility.Visible; } catch { }
             BuildNav();
             // re-assert the accent shortly after, in case WPF-UI's theme watcher resets it to the system colour
             var t = new DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(500) };
-            t.Tick += (_, _) => { t.Stop(); try { ApplyAccent(); if (Ob) HighlightRail(); if (!string.IsNullOrEmpty(_sel)) Select(_sel); } catch { } };
+            t.Tick += (_, _) => { t.Stop(); try { ApplyAccent(); if (Pane) HighlightRail(); ReRenderCurrent(); } catch { } };
             t.Start();
         }
         catch { }
-        try { if (!string.IsNullOrEmpty(_sel)) Select(_sel); } catch { }
+        try { ReRenderCurrent(); } catch { }
+    }
+
+    // Re-render whatever view is on screen (Settings keeps you in Settings; otherwise the selected section).
+    private void ReRenderCurrent()
+    {
+        if (_inSettings) ShowSettings();
+        else if (!string.IsNullOrEmpty(_sel)) Select(_sel);
     }
 
     private static LinearGradientBrush LinB(Point s, Point e, params (string hex, double off)[] stops)
@@ -423,27 +430,231 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         LinearGradientBrush baseB = key switch
         {
             "obsidian" => LinB(new Point(0.2, 0), new Point(0.5, 1), ("#101116", 0), ("#0a0b0e", .5), ("#070709", 1)),
-            "event-horizon" => LinB(tl, br, ("#0c0c18", 0), ("#07070e", 1)),
-            "terminal" => LinB(tl, br, ("#06160e", 0), ("#04100a", 1)),
-            "synthwave" => LinB(tl, br, ("#1a0b33", 0), ("#2a0f52", .55), ("#4a1d5e", 1)),
-            "nebula" => LinB(new Point(0, 0), new Point(1, 1), ("#4c1d95", 0), ("#1e40af", .45), ("#0e7490", .8), ("#9d174d", 1)),
+            "event-horizon" => LinB(tl, br, ("#140a2a", 0), ("#070410", .55), ("#04020a", 1)),
+            "terminal" => LinB(tl, br, ("#03140c", 0), ("#010a06", 1)),
+            "synthwave" => LinB(new Point(0, 0), new Point(0, 1), ("#0b0c30", 0), ("#1a1550", .5), ("#2a1f63", 1)),
+            "nebula" => LinB(new Point(0, 0), new Point(1, 1), ("#3b1877", 0), ("#1e40af", .4), ("#0e7490", .72), ("#9d174d", 1)),
+            "fluent" => LinB(new Point(0.1, 0), new Point(0.6, 1), ("#17171f", 0), ("#111119", .55), ("#0c0c12", 1)),
             _ => LinB(tl, br, ("#0c0f15", 0), ("#070809", 1)),
         };
         BgLayer.Children.Add(new Rectangle { Fill = baseB });
 
-        if (key == "obsidian")
+        switch (key)
         {
-            // deep near-black + faster drifting light + a distant-star field + a centred white black-hole
-            MovingGlow(58, 0xC6, 0xD2, 0xE6, 0.92, 0.72, new Point(0.12, -0.08), new Point(0.9, 0.24), 9);
-            MovingGlow(32, 0x7A, 0x90, 0xB2, 0.72, 0.6, new Point(0.95, 1.1), new Point(0.08, 0.78), 13);
-            AddStars(100);
-            AddBlackhole();
+            case "obsidian":
+                // deep near-black + drifting light + a distant-star field + a centred white black-hole
+                MovingGlow(58, 0xC6, 0xD2, 0xE6, 0.92, 0.72, new Point(0.12, -0.08), new Point(0.9, 0.24), 9);
+                MovingGlow(32, 0x7A, 0x90, 0xB2, 0.72, 0.6, new Point(0.95, 1.1), new Point(0.08, 0.78), 13);
+                AddStars(100); AddBlackhole(); break;
+            case "event-horizon": BuildEventHorizon(); break;
+            case "terminal": BuildMatrixRain(); break;
+            case "synthwave": BuildSynthwave(); break;
+            case "nebula": BuildNebula(); break;
+            case "fluent": BuildFluentSoft(); break;
         }
-        else if (key == "event-horizon")
-            BgLayer.Children.Add(new Rectangle { Fill = RadGlow(C(0x8B, 0x5C, 0xF6), 0.5, -0.15, 0.6, 0.5, 56) });
-        else if (key == "terminal")
-            BgLayer.Children.Add(new Rectangle { Fill = RadGlow(C(0x39, 0xFF, 0x6E), 0.5, 1.12, 0.6, 0.5, 26) });
     }
+
+    // Event Horizon — violet gravitational core, rotating accretion rings, outer glow.
+    private void BuildEventHorizon()
+    {
+        var col = C(0x8B, 0x5C, 0xF6);
+        MovingGlow(66, col.R, col.G, col.B, 0.95, 0.75, new Point(0.5, -0.12), new Point(0.5, 0.16), 12);
+        var host = new Grid { Width = 360, Height = 360, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false, Opacity = 0 };
+        host.Children.Add(new Ellipse { Width = 300, Height = 300, Fill = RadGlow(col, 0.5, 0.5, 0.5, 0.5, 95), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        var core = new Ellipse { Width = 150, Height = 150, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var cb = new RadialGradientBrush();
+        cb.GradientStops.Add(new GradientStop(Color.FromArgb(235, 6, 3, 14), 0));
+        cb.GradientStops.Add(new GradientStop(Color.FromArgb(120, 6, 3, 14), 0.62));
+        cb.GradientStops.Add(new GradientStop(Color.FromArgb(0, 6, 3, 14), 1));
+        core.Fill = cb; host.Children.Add(core);
+        host.Children.Add(new Ellipse { Width = 140, Height = 140, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Stroke = new SolidColorBrush(Color.FromArgb(235, col.R, col.G, col.B)), StrokeThickness = 1.8, Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = col, BlurRadius = 24, ShadowDepth = 0, Opacity = 0.9 } });
+        void Ring(double d, double thick, double[] dash, double seconds, bool cw)
+        {
+            var g = new Grid { RenderTransformOrigin = new Point(0.5, 0.5) };
+            var rt = new RotateTransform(); g.RenderTransform = rt;
+            g.Children.Add(new Ellipse { Width = d, Height = d, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Stroke = new SolidColorBrush(Color.FromArgb(160, col.R, col.G, col.B)), StrokeThickness = thick, StrokeDashArray = new DoubleCollection(dash), StrokeDashCap = PenLineCap.Round, Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = col, BlurRadius = 16, ShadowDepth = 0, Opacity = 0.55 } });
+            host.Children.Add(g);
+            var a = new System.Windows.Media.Animation.DoubleAnimation(cw ? 0 : 360, cw ? 360 : 0, System.TimeSpan.FromSeconds(seconds)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
+            System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(a, 30);
+            rt.BeginAnimation(RotateTransform.AngleProperty, a);
+        }
+        Ring(200, 2.4, new[] { 28.0, 10 }, 26, true);
+        Ring(270, 1.7, new[] { 9.0, 13 }, 38, false);
+        Ring(330, 1.2, new[] { 4.0, 15 }, 54, true);
+        BgLayer.Children.Add(host);
+        host.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 0.6, System.TimeSpan.FromSeconds(1.8)) { EasingFunction = new System.Windows.Media.Animation.SineEase() });
+    }
+
+    // Midnight Terminal — hacker matrix rain + scanlines + green floor glow.
+    private void BuildMatrixRain()
+    {
+        var green = C(0x39, 0xFF, 0x6E);
+        BgLayer.Children.Add(new Rectangle { Fill = RadGlow(green, 0.5, 1.08, 0.75, 0.5, 30) });
+        var canvas = new System.Windows.Controls.Canvas { Width = 1000, Height = 600, ClipToBounds = true };
+        const string glyphs = "01<>/\\|=+*#%ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆ";
+        int cols = 30;
+        for (int i = 0; i < cols; i++)
+        {
+            double x = (i + 0.5) / cols * 1000.0;
+            int len = 16 + _rng.Next(16);
+            var sbld = new System.Text.StringBuilder();
+            for (int j = 0; j < len; j++) { sbld.Append(glyphs[_rng.Next(glyphs.Length)]); sbld.Append('\n'); }
+            var tb = new TextBlock { Text = sbld.ToString(), FontFamily = new FontFamily("Consolas"), FontSize = 15, LineHeight = 16, Foreground = new SolidColorBrush(green), TextAlignment = TextAlignment.Center };
+            var mask = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+            mask.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0));
+            mask.GradientStops.Add(new GradientStop(Color.FromArgb(70, 0, 0, 0), 0.55));
+            mask.GradientStops.Add(new GradientStop(Color.FromArgb(255, 0, 0, 0), 0.92));
+            mask.GradientStops.Add(new GradientStop(Colors.White, 1));
+            tb.OpacityMask = mask;
+            tb.Opacity = 0.45 + _rng.NextDouble() * 0.45;
+            System.Windows.Controls.Canvas.SetLeft(tb, x);
+            System.Windows.Controls.Canvas.SetTop(tb, -300 - _rng.Next(600));
+            var tt = new TranslateTransform(); tb.RenderTransform = tt;
+            double dur = 6 + _rng.NextDouble() * 9;
+            var ay = new System.Windows.Media.Animation.DoubleAnimation(0, 1400, System.TimeSpan.FromSeconds(dur)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, BeginTime = System.TimeSpan.FromSeconds(_rng.NextDouble() * dur) };
+            System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(ay, 22);
+            tt.BeginAnimation(TranslateTransform.YProperty, ay);
+            canvas.Children.Add(tb);
+        }
+        BgLayer.Children.Add(new Viewbox { Stretch = Stretch.Fill, Child = canvas, IsHitTestVisible = false, Opacity = 0.85 });
+        AddScanlines(green);
+    }
+
+    private void AddScanlines(Color c)
+    {
+        var geo = new GeometryDrawing(new SolidColorBrush(Color.FromArgb(16, c.R, c.G, c.B)), null, new RectangleGeometry(new Rect(0, 0, 4, 1.4)));
+        var db = new DrawingBrush(geo) { TileMode = TileMode.Tile, Viewport = new Rect(0, 0, 4, 4), ViewportUnits = BrushMappingMode.Absolute, Stretch = Stretch.None };
+        BgLayer.Children.Add(new Rectangle { Fill = db, IsHitTestVisible = false });
+    }
+
+    // Synthwave — retrowave beach: glowing sun with cut bars setting into a mirrored
+    // ocean, dark hills, palm silhouettes and a starry indigo sky.
+    private void BuildSynthwave()
+    {
+        var canvas = new System.Windows.Controls.Canvas { Width = 1000, Height = 600, ClipToBounds = true, IsHitTestVisible = false };
+        const double horizon = 330;
+        var pink = C(0xFF, 0x7A, 0xD9); var mag = C(0xC0, 0x4B, 0xE0); var cyan = C(0x4D, 0xE3, 0xE8); var purple = C(0x8B, 0x5C, 0xF6);
+
+        // stars (upper sky)
+        for (int i = 0; i < 70; i++)
+        {
+            double sz = 0.6 + _rng.NextDouble() * 1.6;
+            var stDot = new Ellipse { Width = sz, Height = sz, Fill = new SolidColorBrush(Color.FromRgb(0xEA, 0xEE, 0xFF)) };
+            System.Windows.Controls.Canvas.SetLeft(stDot, _rng.NextDouble() * 1000);
+            System.Windows.Controls.Canvas.SetTop(stDot, _rng.NextDouble() * (horizon - 30));
+            double op = 0.2 + _rng.NextDouble() * 0.7; stDot.Opacity = op;
+            var tw = new System.Windows.Media.Animation.DoubleAnimation(op, op * 0.3, System.TimeSpan.FromSeconds(1.8 + _rng.NextDouble() * 3)) { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
+            System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(tw, 18);
+            stDot.BeginAnimation(OpacityProperty, tw);
+            canvas.Children.Add(stDot);
+        }
+
+        // sun glow halo
+        var halo = new Ellipse { Width = 440, Height = 440, Fill = RadGlow(mag, 0.5, 0.5, 0.5, 0.5, 120) };
+        System.Windows.Controls.Canvas.SetLeft(halo, 280); System.Windows.Controls.Canvas.SetTop(halo, 0);
+        canvas.Children.Add(halo);
+
+        // sun disc (clipped) with horizontal cut bars
+        double sunD = 250, sunX = 375, sunY = 95;
+        var sg = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        sg.GradientStops.Add(new GradientStop(C(0xFD, 0xEF, 0xE0), 0));
+        sg.GradientStops.Add(new GradientStop(pink, 0.5));
+        sg.GradientStops.Add(new GradientStop(purple, 1));
+        var sunHost = new System.Windows.Controls.Canvas { Width = sunD, Height = sunD, Clip = new EllipseGeometry(new Point(sunD / 2, sunD / 2), sunD / 2, sunD / 2) };
+        sunHost.Children.Add(new Ellipse { Width = sunD, Height = sunD, Fill = sg });
+        var barBrush = new SolidColorBrush(C(0x14, 0x12, 0x40));
+        double by = sunD * 0.52;
+        for (int b = 0; b < 8 && by < sunD; b++)
+        {
+            double h = 3 + b * 1.7;
+            var bar = new Rectangle { Width = sunD, Height = h, Fill = barBrush };
+            System.Windows.Controls.Canvas.SetTop(bar, by);
+            sunHost.Children.Add(bar);
+            by += h + 6 + b * 1.1;
+        }
+        System.Windows.Controls.Canvas.SetLeft(sunHost, sunX); System.Windows.Controls.Canvas.SetTop(sunHost, sunY);
+        canvas.Children.Add(sunHost);
+
+        // dark rolling hills at the horizon
+        var hillBrush = new SolidColorBrush(C(0x0b, 0x0c, 0x30));
+        void Hill(double cx, double top, double w)
+        {
+            var e = new Ellipse { Width = w, Height = 170, Fill = hillBrush };
+            System.Windows.Controls.Canvas.SetLeft(e, cx - w / 2);
+            System.Windows.Controls.Canvas.SetTop(e, top);
+            canvas.Children.Add(e);
+        }
+        Hill(180, horizon - 44, 440); Hill(770, horizon - 58, 540); Hill(500, horizon - 30, 360);
+
+        // ocean
+        var ocean = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        ocean.GradientStops.Add(new GradientStop(C(0x23, 0x1d, 0x5e), 0));
+        ocean.GradientStops.Add(new GradientStop(C(0x0c, 0x0a, 0x28), 1));
+        var oceanRect = new Rectangle { Width = 1000, Height = 600 - horizon, Fill = ocean };
+        System.Windows.Controls.Canvas.SetTop(oceanRect, horizon);
+        canvas.Children.Add(oceanRect);
+
+        // sun reflection column on the water
+        var rg = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        rg.GradientStops.Add(new GradientStop(Color.FromArgb(150, cyan.R, cyan.G, cyan.B), 0));
+        rg.GradientStops.Add(new GradientStop(Color.FromArgb(0, cyan.R, cyan.G, cyan.B), 1));
+        var refl = new Rectangle { Width = sunD * 0.8, Height = 600 - horizon, Fill = rg };
+        System.Windows.Controls.Canvas.SetLeft(refl, sunX + sunD * 0.5 - sunD * 0.4);
+        System.Windows.Controls.Canvas.SetTop(refl, horizon);
+        canvas.Children.Add(refl);
+
+        // shimmering water lines (perspective, gently bobbing)
+        var waterGroup = new System.Windows.Controls.Canvas();
+        var wl = new SolidColorBrush(Color.FromArgb(70, cyan.R, cyan.G, cyan.B));
+        double wy = horizon + 8, wstep = 5;
+        for (int k = 0; k < 26 && wy < 600; k++) { waterGroup.Children.Add(new Line { X1 = 0, Y1 = wy, X2 = 1000, Y2 = wy, Stroke = wl, StrokeThickness = 1 }); wy += wstep; wstep *= 1.12; }
+        canvas.Children.Add(waterGroup);
+        var wt = new TranslateTransform(); waterGroup.RenderTransform = wt;
+        var wa = new System.Windows.Media.Animation.DoubleAnimation(0, 9, System.TimeSpan.FromSeconds(3)) { AutoReverse = true, RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever, EasingFunction = new System.Windows.Media.Animation.SineEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut } };
+        System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(wa, 20);
+        wt.BeginAnimation(TranslateTransform.YProperty, wa);
+
+        // palm silhouettes left & right
+        void Palm(double baseX, double baseY, bool flip)
+        {
+            var g = new System.Windows.Controls.Canvas();
+            var dark = new SolidColorBrush(C(0x04, 0x04, 0x16));
+            g.Children.Add(new System.Windows.Shapes.Path { Stroke = dark, StrokeThickness = 10, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, Data = Geometry.Parse("M0,0 C 6,-70 -6,-130 12,-190") });
+            foreach (var f in new[]
+            {
+                "M12,-190 C -28,-220 -70,-214 -98,-192",
+                "M12,-190 C -18,-230 -48,-248 -78,-250",
+                "M12,-190 C 10,-236 4,-264 -2,-288",
+                "M12,-190 C 44,-232 76,-242 108,-234",
+                "M12,-190 C 38,-214 76,-214 108,-192",
+            }) g.Children.Add(new System.Windows.Shapes.Path { Stroke = dark, StrokeThickness = 7, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, Data = Geometry.Parse(f) });
+            if (flip) { g.RenderTransformOrigin = new Point(0, 0); g.RenderTransform = new ScaleTransform(-1, 1); }
+            System.Windows.Controls.Canvas.SetLeft(g, baseX); System.Windows.Controls.Canvas.SetTop(g, baseY);
+            canvas.Children.Add(g);
+        }
+        Palm(78, horizon + 46, false);
+        Palm(922, horizon + 46, true);
+
+        BgLayer.Children.Add(new Viewbox { Stretch = Stretch.Fill, Child = canvas, IsHitTestVisible = false });
+    }
+
+    // Nebula — drifting multi-colour gas clouds + stars.
+    private void BuildNebula()
+    {
+        MovingGlow(72, 0x9d, 0x17, 0x4d, 0.82, 0.7, new Point(0.15, 0.1), new Point(0.8, 0.5), 17);
+        MovingGlow(60, 0x0e, 0x74, 0x90, 0.9, 0.78, new Point(0.9, 0.2), new Point(0.2, 0.82), 21);
+        MovingGlow(54, 0x4c, 0x1d, 0x95, 0.86, 0.7, new Point(0.5, 1.05), new Point(0.6, 0.1), 25);
+        AddStars(150);
+    }
+
+    // Fluent — soft translucent acrylic: slow pastel light-blooms over deep charcoal.
+    private void BuildFluentSoft()
+    {
+        MovingGlow(46, 0x7C, 0x5C, 0xFC, 0.95, 0.78, new Point(0.1, 0.0), new Point(0.6, 0.42), 16);
+        MovingGlow(40, 0x4F, 0x9D, 0xF7, 0.9, 0.72, new Point(0.95, 0.25), new Point(0.25, 0.8), 20);
+        MovingGlow(34, 0xF7, 0x9D, 0xD0, 0.82, 0.66, new Point(0.5, 1.05), new Point(0.7, 0.15), 24);
+    }
+
 
     private void StartRpc(string id)
     {
@@ -529,7 +740,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         _catStats.Clear();
         foreach (var c in _cat.Categories) { var items = _cat.Tweaks.Where(t => t.Category == c).ToList(); _catStats[c] = (items.Count, items.Count(t => Engine.State(t) == "applied")); }
 
-        if (Ob)
+        if (Pane)
         {
             try { RailCol.Width = new GridLength(150); RailScroll.Visibility = Visibility.Visible; } catch { }
             BuildRail();
@@ -664,12 +875,13 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (!string.IsNullOrEmpty(_search)) { _navving = true; try { SearchBox.Text = ""; } catch { } _navving = false; _search = ""; }
         if (name != "BIOS tweaks") { _biosUnlocked = false; try { _biosTimer?.Stop(); } catch { } }
-        if (Ob && _rail.Count > 0)
+        if (Pane && _rail.Count > 0)
         {
             var sec = SectionOf(name);
             if (sec != _railSection) { _railSection = sec; BuildSubNav(); HighlightRail(); }
         }
         _sel = name;
+        _inSettings = false;
         var accent = UiAccent;
         foreach (var kv in _nav)
         {
@@ -1775,6 +1987,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ShowSettings()
     {
+        _inSettings = true;
         HeaderTitle.Text = Loc.S("Settings");
         HeaderSub.Text = Loc.S("Appearance — make it yours");
         TweakList.Items.Clear();
@@ -1820,7 +2033,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
         drow.Children.Add(comfy); drow.Children.Add(compact); d.Children.Add(drow);
         TweakList.Items.Add(Card(d));
 
-        var b = Section("UI style", "Pick the app's look. Obsidian is the new default (clean, with a soft fading background); Legacy keeps the classic UI. Light styles are on the way.");
+        var b = Section("UI style", "Pick the app's look. NullZone is the default; Legacy keeps the classic UI. Event Horizon, Nebula, Midnight Terminal, Synthwave and Fluent each bring their own animated background.");
         var srow = new WrapPanel();
         foreach (var sd in Styles)
         {
@@ -2753,6 +2966,7 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     // EXM-style surface tokens (kept theme-adaptive via white overlays)
     private static string _styleStatic = "obsidian";
     private static bool Ob => _styleStatic == "obsidian";
+    private static bool Pane => _styleStatic != "legacy";   // three-pane layout (rail→category→content) for every style except Legacy
     // Obsidian uses flat solid graphite panels (like the reference); other styles keep translucent cards.
     private static Color CardBg => Ob ? Color.FromRgb(0x14, 0x15, 0x1a) : Color.FromArgb(20, 255, 255, 255);
     private static Color CardBgHover => Ob ? Color.FromRgb(0x1a, 0x1b, 0x22) : Color.FromArgb(32, 255, 255, 255);
