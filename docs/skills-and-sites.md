@@ -3,6 +3,8 @@
 Everything we installed / referenced this session, with install commands + what each does.
 Skills install into `~/.claude/skills/` (user-global) or via `/plugin`.
 
+_Last updated: 2026-11-24 — no new installs since 2026-11-18; html-demo now powers the site's live demo window._
+
 ---
 
 ## 🧩 Skills installed THIS session
@@ -23,7 +25,7 @@ Skills install into `~/.claude/skills/` (user-global) or via `/plugin`.
 | Skill | Source | What it does | Install |
 |---|---|---|---|
 | **creating-wpf-animations** | `christian289/dotnet-with-claudecode` | WPF animation patterns (Storyboard, easing). Used for the app's UI animations. | `npx skillfish add christian289/dotnet-with-claudecode creating-wpf-animations` |
-| **html-demo** | `MengTo/Skills` | Draw an app demo live in HTML (looks recorded, stays crisp). Used for the README GIF. | `npx skills add MengTo/Skills --skill html-demo` |
+| **html-demo** | `MengTo/Skills` | Draw an app demo live in HTML (looks recorded, stays crisp). **Now drives the live "See it live" Optimize-view demo window on the site** (`site/assets/vt-demo.js` + `step-window.js/.css`). | `npx skills add MengTo/Skills --skill html-demo` |
 | **everything-claude-code (ECC)** | `WorldFlowAI/everything-claude-code` | Big workflow pack: code-review, security-review, planner, TDD, refactor agents. | `claude plugin marketplace add WorldFlowAI/everything-claude-code` then `claude plugin install everything-claude-code` |
 
 ## 🧩 Added for web/coding (this session)
