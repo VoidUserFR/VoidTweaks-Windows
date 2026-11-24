@@ -1,0 +1,53 @@
+name: Release
+
+# Cuts a GitHub release whenever a v* tag is pushed:
+# builds the self-contained single-file exe, the portable zip and the
+# Inno Setup installer, writes SHA256SUMS, and uploads them all.
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish (self-contained, single file)
+        run: dotnet publish VoidTweaksApp/VoidTweaks.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o VoidTweaksApp/bin/publish
+
+      - name: Portable zip
+        run: Compress-Archive -Path VoidTweaksApp/bin/publish/* -DestinationPath VoidTweaks-portable.zip -Force
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" VoidTweaks.iss'
+
+      - name: Name installer for this tag
+        run: Copy-Item installer/VoidTweaks-Setup.exe "VoidTweaks-${{ github.ref_name }}-Setup.exe"
+
+      - name: Checksums
+        run: |
+          Get-FileHash VoidTweaks-portable.zip, "VoidTweaks-${{ github.ref_name }}-Setup.exe" -Algorithm SHA256 |
+            ForEach-Object { "{0}  {1}" -f $_.Hash, (Split-Path $_.Path -Leaf) } |
+            Out-File -Encoding ascii "SHA256SUMS-${{ github.ref_name }}.txt"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2.0.8
+        with:
+          name: VoidTweaks ${{ github.ref_name }}
+          body_path: docs/release-notes-v3.2.md
+          files: |
+            VoidTweaks-portable.zip
+            VoidTweaks-${{ github.ref_name }}-Setup.exe
+            SHA256SUMS-${{ github.ref_name }}.txt
