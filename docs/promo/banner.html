@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>VoidTweaks — Banner</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { background:#000; overflow:hidden; }
+  #stage { position:relative; width:680px; height:240px; overflow:hidden;
+    background:radial-gradient(120% 160% at 28% 42%, #16131f 0%, #0b0812 48%, #050309 76%, #000 100%);
+    font-family:'Segoe UI',system-ui,sans-serif; }
+  .neb { position:absolute; border-radius:50%; filter:blur(34px); }
+  .n1 { width:360px; height:360px; left:-40px; top:-120px; background:radial-gradient(circle, rgba(139,124,240,.4), transparent 64%); }
+  .n2 { width:320px; height:320px; right:-40px; top:40px; background:radial-gradient(circle, rgba(83,120,255,.3), transparent 64%); }
+  .n3 { width:260px; height:260px; left:40%; bottom:-120px; background:radial-gradient(circle, rgba(53,185,173,.22), transparent 64%); }
+  .stars { position:absolute; inset:0; }
+  .s { position:absolute; border-radius:50%; background:#fff; }
+  .s.g { box-shadow:0 0 5px 1px rgba(255,255,255,.9), 0 0 12px 3px rgba(173,165,230,.5); }
+
+  .halo { position:absolute; left:120px; top:120px; width:150px; height:150px; transform:translate(-50%,-50%); }
+  .halo img { width:100%; height:100%; border-radius:22%; display:block;
+    filter:drop-shadow(0 0 16px rgba(255,255,255,.4)) drop-shadow(0 0 44px rgba(139,124,240,.4)); position:relative; z-index:2; }
+  .ring { position:absolute; inset:-18%; border-radius:50%; border:1.4px solid transparent;
+    border-top-color:rgba(173,165,230,.55); border-right-color:rgba(255,255,255,.3); }
+  .ring.r2 { inset:-4%; border-top-color:rgba(255,255,255,.3); border-left-color:rgba(139,124,240,.45); }
+
+  .txt { position:absolute; left:232px; top:50%; transform:translateY(-50%); }
+  .wordmark { font-size:50px; font-weight:800; letter-spacing:-1px; line-height:1;
+    background:linear-gradient(180deg,#fff,#cdcbd9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .tag { margin-top:10px; font-size:17px; font-weight:500; color:#b9b6c9; }
+  .tag b { color:#fff; font-weight:700; }
+  .vignette { position:absolute; inset:0; box-shadow:inset 0 0 90px 24px rgba(0,0,0,.55); pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="neb n1" id="n1"></div><div class="neb n2" id="n2"></div><div class="neb n3" id="n3"></div>
+  <div class="stars" id="stars"></div>
+  <div class="halo" id="halo">
+    <div class="ring" id="ring1"></div><div class="ring r2" id="ring2"></div>
+    <img src="../img/logo.png" alt="VoidTweaks" />
+  </div>
+  <div class="txt">
+    <div class="wordmark">VoidTweaks</div>
+    <div class="tag">Windows 11, optimized. <b>Free</b> &amp; fully reversible.</div>
+  </div>
+  <div class="vignette"></div>
+</div>
+<script>
+const DUR = 6.0, TAU = Math.PI*2;
+let seed = 42; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+const host=document.getElementById('stars'); const stars=[];
+for(let i=0;i<70;i++){ const s=document.createElement('span'); s.className='s'+(rnd()>0.7?' g':'');
+  const sz=rnd()>.8?2:1; s.style.width=s.style.height=sz+'px';
+  s.style.left=(rnd()*680)+'px'; s.style.top=(rnd()*240)+'px';
+  host.appendChild(s); stars.push({el:s,base:0.2+rnd()*0.5,freq:(rnd()>.5?1:2),ph:rnd()*TAU}); }
+const n1=document.getElementById('n1'),n2=document.getElementById('n2'),n3=document.getElementById('n3'),
+      halo=document.getElementById('halo'),r1=document.getElementById('ring1'),r2=document.getElementById('ring2');
+function frame(t){
+  const u=t/DUR;
+  n1.style.transform=`translate(${8*Math.sin(TAU*u)}px,${6*Math.cos(TAU*u)}px)`;
+  n2.style.transform=`translate(${-7*Math.cos(TAU*u)}px,${5*Math.sin(TAU*u)}px)`;
+  n3.style.transform=`translate(${6*Math.sin(TAU*u+1.5)}px,${-5*Math.cos(TAU*u)}px)`;
+  for(const s of stars){ s.el.style.opacity=(s.base*(0.72+0.28*Math.sin(TAU*s.freq*u+s.ph))).toFixed(3); }
+  halo.style.transform=`translate(-50%,-50%) translateY(${3*Math.sin(TAU*u)}px) scale(${1+0.02*Math.sin(TAU*2*u)})`;
+  r1.style.transform=`rotate(${360*u}deg)`;
+  r2.style.transform=`rotate(${-360*2*u}deg)`;
+}
+let t0=null,paused=false;
+function loop(ts){ if(t0==null)t0=ts; if(!paused) frame(((ts-t0)/1000)%DUR); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+window.__dur=DUR; window.__reset=()=>{t0=null;}; window.__pause=v=>{paused=v!==false;}; window.__frameAt=t=>{paused=true;frame(t);};
+</script>
+</body>
+</html>
